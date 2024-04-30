@@ -1,6 +1,7 @@
 import edu.princeton.cs.algs4.Picture;
 
 import java.awt.*;
+import java.text.CollationElementIterator;
 
 public class SeamCarver {
 
@@ -28,7 +29,10 @@ public class SeamCarver {
         //calculate the energy functon of each pixel
         Color color1 = picture().get(x + 1,y);
         Color color2 = picture().get(x - 1,y);
-        int deltax = Math.pow(Math.abs(color1.getRed() - color2.getRed()),2) + Math.pow(Math.abs(color1.getRed() - color2.getRed()),2)
+        Color color3 = picture().get(x,y - 1);
+        Color color4 = picture().get(x,y + 1);
+        double deltax = Math.pow(Math.abs(color1.getRed() - color2.getRed()),2) + Math.pow(Math.abs(color1.getBlue() - color2.getBlue()),2) + Math.pow(Math.abs(color1.getGreen() - color2.getGreen()),2);
+        double deltay = Math.pow(Math.abs(color3.getRed() - color4.getRed()),2) + Math.pow(Math.abs(color3.getBlue() - color4.getBlue()),2) + Math.pow(Math.abs(color3.getGreen() - color4.getGreen()),2);
     }
 
     // sequence of indices for horizontal seam
