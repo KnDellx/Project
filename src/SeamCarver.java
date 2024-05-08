@@ -1,32 +1,36 @@
-import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.Picture;
 
 import java.awt.*;
-import java.text.CollationElementIterator;
 import java.util.HashMap;
 
 public class SeamCarver {
-    private Picture picture;
+    private Picture pic;
     private String mode;
+    private int height;
+    private int width;
+
+
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture){
-        picture = new Picture(picture);
+        pic = new Picture(picture);
+        width = pic.width();
+        height = pic.height();
     }
 
     // current picture
     public Picture picture(){
-        return picture;
+        return pic;
     }
 
     // width of current picture
     public int width(){
-        return picture.width();
+        return pic.width();
     }
 
     // height of current picture
     public int height(){
-        return picture.height();
+        return pic.height();
     }
 
     // energy of pixel at column x and row y
@@ -149,23 +153,74 @@ public class SeamCarver {
 
                     //End at the second to last column, because 'next' involves
                     // the next column.
-                    if (col + 1 == width() - 1 && newEng < cost) {
+                    if (row + 1 == width() - 1 && newEng < cost) {
                         cost = newEng;
                         end = next;
                     }
                 }
             }
     }
+        //模式为水平时，定义路径大小为宽度
+        int size = 0;
+        int[] path = new int[size];
+        if (mode == "horizontal") {
+            size = width();
+            path = new int[width()];
+        } else if (mode == "vertical") {
+            size = height();
+            path = new int[height()];
+        }
+        //通过回溯的方法还原最短路径
+        String current = end;
+        //遍历最小的
+        while (size > 0){
+            size = size - 1;
+            path[size] = str2id(mode,current);
+            current = pathTo.get(current);
+        }
+        return path;
 
     }
 
     // remove horizontal seam from current picture
-    public void removeHorizontalSeam(int[] seam)
+    public void removeHorizontalSeam(int[] seam){
+        Picture newOne = new Picture(width(),height() - 1);
+        //使seam上的所有色素块往下移动一格
+        //首先选中seam上方得区域
+
+        for (int col = 0; col < width() ; col++) {
+            for (int row = seam[col] - 1; row < height; row++) {
+                newOne.set(col,row,pic.get(col,row + 1));
+            }
+        }
+        for (int col = 0; col < width(); col++) {
+            for (int row = 0; row < seam[col] - 1; row++) {
+                newOne.set(col,row,pic.get(col,row));
+            }
+        }
+        height = height - 1;
+        pic = new Picture(newOne);
+
+    }
 
     // remove vertical seam from current picture
-    public void removeVerticalSeam(int[] seam)
+    public void removeVerticalSeam(int[] seam){
+        Picture newOne = new Picture(width() - 1,height());
+        for (int row = 0; row < height(); row++) {
+            for (int col = 0; col < width() - 1; col++) {
+                if (col <= seam[row] - 1){
+                    newOne.set(col,row,pic.get(col,row));
+                }else {
+                    newOne.set(col,row,pic.get(col + 1,row));
+                }
+            }
+
+        }
+
+    }
 
     //  unit testing (optional)
-    public static void main(String[] args)
+    public static void main(String[] args){
+    }
 
 }
