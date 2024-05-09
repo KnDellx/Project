@@ -59,7 +59,7 @@ public class ImageReader {
 
 
     // 导入图像文件，并返回色彩值矩阵
-    private int[][][] imageToColorScale(String filePath) throws IOException {
+    public int[][][] imageToColorScale(String filePath) throws IOException {
         File file = new File(filePath);
         this.image = ImageIO.read(file);
 

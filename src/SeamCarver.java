@@ -11,12 +11,15 @@ public class SeamCarver {
 
 
 
+
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture){
         pic = new Picture(picture);
         width = pic.width();
         height = pic.height();
+
     }
+
 
     // current picture
     public Picture picture(){
@@ -216,11 +219,9 @@ public class SeamCarver {
             }
 
         }
+        width = width - 1;
+        pic = new Picture(newOne);
 
-    }
-
-    //  unit testing (optional)
-    public static void main(String[] args){
     }
 
 }
