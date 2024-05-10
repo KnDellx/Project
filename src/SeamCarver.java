@@ -35,6 +35,13 @@ public class SeamCarver {
     public int height(){
         return pic.height();
     }
+    public Picture seamHorizontal(int a){
+        int b= pic.height()-a;
+        for (int i = 0; i < b; i++) {
+            removeHorizontalSeam(findHorizontalSeam());
+        }
+        return pic;
+    }
 
     // energy of pixel at column x and row y
     public double energy(int x, int y){
@@ -47,14 +54,15 @@ public class SeamCarver {
             throw new  IndexOutOfBoundsException();
         }
         //计算能量方程
+        //中间的不算
         Color color1 = picture().get(x + 1,y);
         Color color2 = picture().get(x - 1,y);
         Color color3 = picture().get(x,y - 1);
         Color color4 = picture().get(x,y + 1);
         //计算沿着x,y方向分别的能量数值
-        double deltax = Math.pow(Math.abs(color1.getRed() - color2.getRed()),2) + Math.pow(Math.abs(color1.getBlue() - color2.getBlue()),2) + Math.pow(Math.abs(color1.getGreen() - color2.getGreen()),2);
-        double deltay = Math.pow(Math.abs(color3.getRed() - color4.getRed()),2) + Math.pow(Math.abs(color3.getBlue() - color4.getBlue()),2) + Math.pow(Math.abs(color3.getGreen() - color4.getGreen()),2);
-        return deltax + deltay;
+        double deltaX = Math.pow(Math.abs(color1.getRed() - color2.getRed()),2) + Math.pow(Math.abs(color1.getBlue() - color2.getBlue()),2) + Math.pow(Math.abs(color1.getGreen() - color2.getGreen()),2);
+        double deltaY = Math.pow(Math.abs(color3.getRed() - color4.getRed()),2) + Math.pow(Math.abs(color3.getBlue() - color4.getBlue()),2) + Math.pow(Math.abs(color3.getGreen() - color4.getGreen()),2);
+        return deltaX + deltaY;
     }
 
     // 水平切割
@@ -72,13 +80,14 @@ public class SeamCarver {
             //对于第一列的像素设置前导像素为空并填入能量
             if (col == 0){
                 energyTo.put(cur,energy(col,row));
+                //???
                 pathTo.put(cur,null);
             }
             //遍历该点附近
                 for (int i = row - 1; i <= row + 1; i++)
                     if (i >= 0 && i < height()) {
                         next = (col + 1) + " " + row;
-                        double newEng = energy(col + 1, i) + energyTo.get(cur);
+                        double newEng = energy(col + 1, i) + energyTo.get(cur);//???
                         //如果我们还没有一条新的边，添加一个；或者
                         // 如果这个边代表的能量值更小就代替
                         if (energyTo.get(next) == null || newEng < energyTo.get(next)) {
@@ -115,10 +124,12 @@ public class SeamCarver {
         }
         return path;
     }
+
+    //optimize here
     private int str2id(String mode, String str) {
-        if (mode.equals("v"))
-            return Integer.parseInt(str.split(" ")[0]);
-        else if (mode.equals("h"))
+        if (mode.equals("vertical"))
+            return Integer.parseInt(str.split(" ")[0]);//0->1
+        else if (mode.equals("horizontal"))
             return Integer.parseInt(str.split(" ")[1]);
         else
             throw new IllegalArgumentException();
@@ -156,6 +167,7 @@ public class SeamCarver {
 
                     //End at the second to last column, because 'next' involves
                     // the next column.
+                    //bug
                     if (row + 1 == width() - 1 && newEng < cost) {
                         cost = newEng;
                         end = next;
@@ -192,12 +204,12 @@ public class SeamCarver {
         //首先选中seam上方得区域
 
         for (int col = 0; col < width() ; col++) {
-            for (int row = seam[col] - 1; row < height; row++) {
-                newOne.set(col,row,pic.get(col,row + 1));
+            for (int row = seam[col] + 1; row < height; row++) {
+                newOne.set(col,row-1,pic.get(col,row ));
             }
         }
         for (int col = 0; col < width(); col++) {
-            for (int row = 0; row < seam[col] - 1; row++) {
+            for (int row = 0; row < seam[col] ; row++) {
                 newOne.set(col,row,pic.get(col,row));
             }
         }
