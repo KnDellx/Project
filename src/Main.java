@@ -1,18 +1,14 @@
-import edu.princeton.cs.algs4.Picture;
-
 public class Main {
     public static void main(String[] args) {
-        long s=System.currentTimeMillis();
-        Picture picture =new Picture("doc/processing/originx.jpg") ;
-        SeamCarver seamCarver =new SeamCarver(picture);
-       // seamCarver.removeHorizontalSeam(seamCarver.findHorizontalSeam());
-     //  seamCarver.removeVerticalSeam(seamCarver.findVerticalSeam());
+        //构造实例
+        SeamCarvingGUI seamCarvingGUI = new SeamCarvingGUI();
+        //启动
+        seamCarvingGUI.setVisible(true);
 
-        seamCarver.seamHorizontal(100);
-        seamCarver.picture().show();
+        //制作一个计时器，在处理好图片后输出
+        long s=System.currentTimeMillis();
         long e=System.currentTimeMillis();
-        System.out.println(e-s
-        );
-       // picture.show();
+        System.out.println(e-s);
+
     }
 }

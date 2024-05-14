@@ -35,18 +35,28 @@ public class SeamCarver {
     public int height(){
         return pic.height();
     }
-    public Picture seamHorizontal(int a){
-        int b= pic.height()-a;
-        for (int i = 0; i < b; i++) {
+//    public Picture seamHorizontal(int a){
+//        int b= pic.height()-a;
+//        for (int i = 0; i < b; i++) {
+//            removeHorizontalSeam(findHorizontalSeam());
+//        }
+//        return pic;
+//    }
+    public void enlargeImage(int wid, int het){
+
+    }
+    public Picture shrinkImage(int wid, int het){
+        int rowShrinked = pic.height() - het;
+        int colShrinked = pic.width() - wid;
+        //先缩小高度
+        for (int col = 0; col < rowShrinked; col++) {
             removeHorizontalSeam(findHorizontalSeam());
         }
+        //再缩小高度
+        for (int row = 0; row < colShrinked; row++) {
+            removeVerticalSeam(findVerticalSeam());
+        }
         return pic;
-    }
-    public void enlargeImage(int col, int row){
-
-    }
-    public void shrinkImage(int col, int row){
-
     }
 
     // energy of pixel at column x and row y
@@ -97,12 +107,10 @@ public class SeamCarver {
                         //如果我们还没有一条新的边，添加一个；或者
                         // 如果这个边代表的能量值更小就代替
                         if (energyTo.get(next) == null || newEng < energyTo.get(next)) {
-
+                            //联系当前点和下一点
                             pathTo.put(next, cur);
                             energyTo.put(next, newEng);
-
-                            //End at the second to last column, because 'next' involves
-                            // the next column.
+                            //如果当前列是倒数第二列，并且新能量值小于当前最小能量值，则更新最小能量值和终点。
                             if (col + 1 == width() - 1 && newEng < cost) {
                                 cost = newEng;
                                 end = next;
@@ -111,15 +119,8 @@ public class SeamCarver {
                     }
             }
         //模式为水平时，定义路径大小为宽度
-        int size = 0;
+        int size = width();
         int[] path = new int[size];
-        if (mode == "horizontal") {
-            size = width();
-            path = new int[width()];
-        } else if (mode == "vertical") {
-            size = height();
-            path = new int[height()];
-        }
         //通过回溯的方法还原最短路径
         String current = end;
         //遍历最小的
@@ -154,7 +155,7 @@ public class SeamCarver {
             for (int col = 0; col < width(); col++) {
                 //用第几行第几列来代表像素点所在位置
                 cur = col + " " + row;
-                //对于第一列的像素设置前导像素为空并填入能量
+                //对于第一行的像素设置前导像素为空并填入能量
                 if (row == 0){
                     energyTo.put(cur,energy(col,row));
                     pathTo.put(cur,null);
@@ -174,7 +175,7 @@ public class SeamCarver {
                     //End at the second to last column, because 'next' involves
                     // the next column.
                     //bug
-                    if (row + 1 == width() - 1 && newEng < cost) {
+                    if (row + 1 == height() - 1 && newEng < cost) {
                         cost = newEng;
                         end = next;
                     }
@@ -182,15 +183,8 @@ public class SeamCarver {
             }
     }
         //模式为水平时，定义路径大小为宽度
-        int size = 0;
+        int size = height();
         int[] path = new int[size];
-        if (mode == "horizontal") {
-            size = width();
-            path = new int[width()];
-        } else if (mode == "vertical") {
-            size = height();
-            path = new int[height()];
-        }
         //通过回溯的方法还原最短路径
         String current = end;
         //遍历最小的
@@ -239,7 +233,6 @@ public class SeamCarver {
         }
         width = width - 1;
         pic = new Picture(newOne);
-
     }
 
 }

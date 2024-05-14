@@ -39,6 +39,7 @@ public class SeamCarvingGUI extends JFrame{
                         JOptionPane.showMessageDialog(null, "Invalid input! Please enter a valid number.");
                     }
                 }
+
             }
         });
 
@@ -65,11 +66,14 @@ public class SeamCarvingGUI extends JFrame{
                     try {
                         int targetWidth = Integer.parseInt(inputWidth);
                         int targetHeight = Integer.parseInt(inputHeight);
-                        seamcarver.shrinkImage(targetWidth,targetHeight);
+                        Picture shrinkedImage = seamcarver.shrinkImage(targetWidth,targetHeight);
+                        //弹出shrink后的图像
+                        shrinkedImage.show();
                     }catch (NumberFormatException ex) {
                         JOptionPane.showMessageDialog(null, "Invalid input! Please enter a valid number.");
                     }
                 }
+
             }
         });
 
@@ -107,17 +111,6 @@ public class SeamCarvingGUI extends JFrame{
         }
     }
 
-
-    //启动
-    public static void main(String[] args) {
-        //构造实例
-        SeamCarvingGUI seamCarvingGUI = new SeamCarvingGUI();
-
-        //启动
-        seamCarvingGUI.setVisible(true);
-
-
-    }
 
 
 }
