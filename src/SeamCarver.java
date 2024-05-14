@@ -35,16 +35,15 @@ public class SeamCarver {
     public int height(){
         return pic.height();
     }
-//    public Picture seamHorizontal(int a){
-//        int b= pic.height()-a;
-//        for (int i = 0; i < b; i++) {
-//            removeHorizontalSeam(findHorizontalSeam());
-//        }
-//        return pic;
-//    }
-    public void enlargeImage(int wid, int het){
+    public Picture enlargeImage(int wid, int het){
+        int colEnlarged = wid - pic.width();
+        int rowEnlarged = het - pic.height();
+        //先放大高度
+        for (int col = 0; col < colEnlarged; col++) {
 
+        }
     }
+
     public Picture shrinkImage(int wid, int het){
         int rowShrinked = pic.height() - het;
         int colShrinked = pic.width() - wid;
@@ -218,6 +217,45 @@ public class SeamCarver {
 
     }
 
+    public void addHorizontalSeam(int[] seam){
+        //仿照remove的方式创建比原来大一行的图片对象
+        Picture newOne = new Picture(width(), height() + 1);
+        //将seam复制到下一行
+        for (int col = 0; col < width(); col++) {
+            for (int row = 0; row < height() + 1; row++) {
+                if (row <= seam[col]){
+                    //seam对应行及上述所有行的像素保持不变
+                    newOne.set(col,row,pic.get(col,row));
+                }else {
+                    //seam对应行下面所有行设定为原图上一行的像素
+                    newOne.set(col,row,pic.get(col,row - 1));
+                }
+            }
+        }
+        height = height + 1;
+        pic = new Picture(newOne);
+    }
+
+    public void addVerticalSeam(int[] seam){
+        //仿照remove的方式创建比原来大一行的图片对象
+        Picture newOne = new Picture(width() + 1, height());
+        //将seam复制到下一行
+        for (int row = 0; row < height(); row++) {
+            for (int col = 0; col < width() + 1; col++) {
+                if (col <= seam[row]){
+                    //seam对应列及左边所有列的像素保持不变
+                    newOne.set(col,row,pic.get(col,row));
+                }else {
+                    //seam对应行右边所有列设定为原图上一列的像素
+                    newOne.set(col,row,pic.get(col - 1,row));
+                }
+            }
+        }
+        width = width + 1;
+        pic = new Picture(newOne);
+    }
+
+
     // remove vertical seam from current picture
     public void removeVerticalSeam(int[] seam){
         Picture newOne = new Picture(width() - 1,height());
@@ -234,5 +272,4 @@ public class SeamCarver {
         width = width - 1;
         pic = new Picture(newOne);
     }
-
 }
