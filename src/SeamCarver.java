@@ -42,6 +42,12 @@ public class SeamCarver {
         }
         return pic;
     }
+    public void enlargeImage(int col, int row){
+
+    }
+    public void shrinkImage(int col, int row){
+
+    }
 
     // energy of pixel at column x and row y
     public double energy(int x, int y){
