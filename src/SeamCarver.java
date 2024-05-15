@@ -38,10 +38,20 @@ public class SeamCarver {
     public Picture enlargeImage(int wid, int het){
         int colEnlarged = wid - pic.width();
         int rowEnlarged = het - pic.height();
+        //保存旧的图片
+        SeamCarver oldseamcarver = new SeamCarver(pic);
         //先放大高度
         for (int col = 0; col < colEnlarged; col++) {
-
+            //每次找到一个seam后remove该seam进而选取第二小的seam,以此类推
+            addVerticalSeam(oldseamcarver.findVerticalSeam());
+            oldseamcarver.removeVerticalSeam(oldseamcarver.findVerticalSeam());
         }
+        for (int row = 0; row < rowEnlarged; row++) {
+            //每次找到一个水平seam后remove掉去寻找第二小的seam以此类推
+            addHorizontalSeam(oldseamcarver.findHorizontalSeam());
+            oldseamcarver.removeHorizontalSeam(oldseamcarver.findHorizontalSeam());
+        }
+        return pic;
     }
 
     public Picture shrinkImage(int wid, int het){
@@ -49,8 +59,7 @@ public class SeamCarver {
         int colShrinked = pic.width() - wid;
         //先缩小高度
         for (int col = 0; col < rowShrinked; col++) {
-            removeHorizontalSeam(findHorizontalSeam());
-        }
+            removeHorizontalSeam(findHorizontalSeam());}
         //再缩小高度
         for (int row = 0; row < colShrinked; row++) {
             removeVerticalSeam(findVerticalSeam());
@@ -60,7 +69,7 @@ public class SeamCarver {
 
     // energy of pixel at column x and row y
     public double energy(int x, int y){
-        //设定边界情况都为1000
+        //设定 边界情况都为1000
         if(x == 0||y == 0||x == width() - 1||y == height() - 1){
             return 1000;
         }
@@ -196,37 +205,38 @@ public class SeamCarver {
 
     }
 
-    // remove horizontal seam from current picture
-    public void removeHorizontalSeam(int[] seam){
-        Picture newOne = new Picture(width(),height() - 1);
-        //使seam上的所有色素块往下移动一格
-        //首先选中seam上方得区域
-
-        for (int col = 0; col < width() ; col++) {
-            for (int row = seam[col] + 1; row < height; row++) {
-                newOne.set(col,row-1,pic.get(col,row ));
-            }
-        }
-        for (int col = 0; col < width(); col++) {
-            for (int row = 0; row < seam[col] ; row++) {
-                newOne.set(col,row,pic.get(col,row));
-            }
-        }
-        height = height - 1;
-        pic = new Picture(newOne);
-
-    }
 
     public void addHorizontalSeam(int[] seam){
+        //首先判断seam是否有效
+        if (!isValidHorizontalSeam(seam)){
+            throw new IllegalArgumentException("Seam is invalid.");
+        }
+
+        //采用平均的方法添加seam
         //仿照remove的方式创建比原来大一行的图片对象
         Picture newOne = new Picture(width(), height() + 1);
         //将seam复制到下一行
         for (int col = 0; col < width(); col++) {
             for (int row = 0; row < height() + 1; row++) {
-                if (row <= seam[col]){
+                if (row < seam[col]){
                     //seam对应行及上述所有行的像素保持不变
                     newOne.set(col,row,pic.get(col,row));
-                }else {
+                } else if (row == seam[col]) {
+
+                    if (row == 0){
+                        //row在第一行只取下方像素
+                        newOne.set(col,row,pic.get(col,row));
+                    } else if (row == height()) {
+                        //row在最后一行只取上方像素
+                        newOne.set(col,row,pic.get(col,row - 1));
+                    } else {
+                        Color up = pic.get(col,row);
+                        Color down = pic.get(col,row + 1);
+                        newOne.set(col,row,aveColor(up,down));
+                    }
+                    newOne.set(col,row + 1,pic.get(col,row));
+
+                } else if (row > seam[col]){
                     //seam对应行下面所有行设定为原图上一行的像素
                     newOne.set(col,row,pic.get(col,row - 1));
                 }
@@ -235,17 +245,53 @@ public class SeamCarver {
         height = height + 1;
         pic = new Picture(newOne);
     }
+    private boolean isValidVerticalSeam(int[] seam){
+        boolean flag = true;
+        if (seam == null || seam.length != pic.height()) {
+            flag = false;
+        }
+        return flag;
+    }
+    private boolean isValidHorizontalSeam(int[] seam){
+        boolean flag = true;
+        if (seam == null || seam.length != pic.width()) {
+            flag = false;
+        }
+        return flag;
+    }
 
     public void addVerticalSeam(int[] seam){
+        //首先判断seam是否有效
+        if (!isValidVerticalSeam(seam)){
+            throw new IllegalArgumentException("Seam is invalid.");
+        }
+        //采用平均的方法添加seam
         //仿照remove的方式创建比原来大一行的图片对象
         Picture newOne = new Picture(width() + 1, height());
         //将seam复制到下一行
         for (int row = 0; row < height(); row++) {
             for (int col = 0; col < width() + 1; col++) {
-                if (col <= seam[row]){
+                if (col < seam[row]){
                     //seam对应列及左边所有列的像素保持不变
                     newOne.set(col,row,pic.get(col,row));
-                }else {
+                    //通过平均的方法添加seam
+                } else if (col == seam[row]) {
+
+                    if (col == 0){
+                        //col在第一列只取右边像素
+                        newOne.set(col,row,pic.get(col,row));
+                    } else if (col == width()) {
+                        //col在最后一列只取左边像素
+                        newOne.set(col,row,pic.get(col - 1,row));
+                    }else {
+                        //采取平均的方式
+                        Color left = pic.get(col, row);
+                        Color right = pic.get(col + 1, row);
+                        newOne.set(col,row,aveColor(left, right));
+                    }
+                    newOne.set(col + 1,row,pic.get(col, row));
+
+                } else if (col > seam[row]){
                     //seam对应行右边所有列设定为原图上一列的像素
                     newOne.set(col,row,pic.get(col - 1,row));
                 }
@@ -253,6 +299,32 @@ public class SeamCarver {
         }
         width = width + 1;
         pic = new Picture(newOne);
+    }
+    private Color aveColor(Color c1, Color c2){
+        int red = (c1.getRed() + c2.getRed()) / 2;
+        int green = (c1.getGreen() + c2.getGreen()) / 2;
+        int blue = (c1.getBlue() + c2.getBlue()) / 2;
+        return new Color(red, green, blue);
+    }
+
+    // remove horizontal seam from current picture
+    public void removeHorizontalSeam(int[] seam){
+        Picture newOne = new Picture(width(),height() - 1);
+        //使seam上的所有色素块往下移动一格
+        //首先选中seam上方得区域
+
+        for (int col = 0; col < width(); col++)
+            for (int row = 0; row < height() - 1; row++) {
+
+                if (row < seam[col])
+                    newOne.set(col, row, pic.get(col, row));
+                else
+                    newOne.set(col, row, pic.get(col, row + 1));
+
+            }
+        height = height - 1;
+        pic = new Picture(newOne);
+
     }
 
 
