@@ -66,13 +66,14 @@ public class PicturePainter extends JPanel {
         // Create a Graphics2D object from the BufferedImage
         Graphics2D g = bufferedImage.createGraphics();
         // Set the color and fill an oval at the mouse position
-        g.setColor(brushColor);
+        g.setColor(Color.GREEN);
         // 画笔大小
         g.fillOval(x - brushSize / 2, y - brushSize / 2, brushSize, brushSize);
         // Dispose of the Graphics2D object
         g.dispose();
         repaint();
     }
+
     // Override the paintComponent method to draw the BufferedImage
     @Override
     protected void paintComponent(Graphics g) {

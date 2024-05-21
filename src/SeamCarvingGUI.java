@@ -26,7 +26,6 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
 
         //为动作进行计时
         timerExample = new TimerExample(this);
-
         addMouseListener(this);
         addMouseMotionListener( this );
 
@@ -45,12 +44,12 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
         shrinkButton.addActionListener(e -> processImage(false));
 
         //创建一个标记的按钮
-        JButton markButton = new JButton("Mark");
-        markButton.addActionListener(e -> contentAware());
+        JButton markButton = new JButton("Protected");
+        markButton.addActionListener(e -> Protected());
 
         //创建一个清除按钮
-        JButton clearButton = new JButton("Clear");
-        clearButton.addActionListener(e -> contentAwareClear());
+        JButton clearButton = new JButton("Removal");
+        clearButton.addActionListener(e -> Removal());
 
         //先创建button的集合的实例进行集成化处理
         JPanel buttonPanel = new JPanel(new GridLayout(5,1));
@@ -73,9 +72,22 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
         imageLabel.setBorder(border);
 
         getContentPane().add(imageLabel, BorderLayout.CENTER);
+    }
+    public void Protected(){
+        //先把图片弹窗的形式弹出
+        PicturePainter painter = new PicturePainter(pic);
+        JFrame contentAwarePanel = new JFrame("Content Aware");
+        contentAwarePanel.add(imageLabel);
+        contentAwarePanel.setSize(pic.width(), pic.height());
+        contentAwarePanel.setLocationRelativeTo(null);
+        contentAwarePanel.setVisible(true);
+        //在上面标记区域
+        contentAwarePanel.add(painter);
+        //将鼠标拖动时标记坐标传回RemoveArea
 
 
-
+    }
+    public void Removal(){
 
     }
 
@@ -227,61 +239,60 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
             w = w * -1;
         g.drawRect(c1, c2, w, h);
     }
-//    private void addMouseListener(){
-//
-//        SeamCarver seamcarver = new SeamCarver(pic);
-//        seamcarver.initMarkedArea();
+//    private void addMouseListener() {
 //        PicturePainter painter = new PicturePainter(pic);
-//        //通过鼠标左右键标记图像决定是保护还是易于移除的区域
+//        // 通过鼠标左右键标记图像决定是保护还是易于移除的区域
 //        imageLabel.addMouseMotionListener(new MouseAdapter() {
 //            @Override
 //            public void mouseDragged(MouseEvent e) {
 //                super.mouseDragged(e);
-//                //由于坐标计算是基于组件的左上角所以需要计算偏移量来进行坐标转换
+//                // 由于坐标计算是基于组件的左上角所以需要计算偏移量来进行坐标转换
 //                int xOffset = (imageLabel.getWidth() - pic.width()) / 2;
 //                int yOffset = (imageLabel.getHeight() - pic.height()) / 2;
 //                int x = e.getX() - xOffset;
 //                int y = e.getY() - yOffset;
-//                if (SwingUtilities.isLeftMouseButton(e)) {
-//                    seamcarver.markRemovalArea(new int[x][y]);
-//                    //左键点击标记为易于移除的区域
-//                    painter.paintAt(x, y);
-//                } else if (SwingUtilities.isRightMouseButton(e)) {
-//                    seamcarver.protectArea(new int[x][y]);
-//                    //右键点击标记为需要保护的区域
-//                    painter.paintAt(x, y);
+//                if (x >= 0 && x < pic.width() && y >= 0 && y < pic.height()) {
+//                    if (SwingUtilities.isLeftMouseButton(e)) {
+//                        seamcarver.markRemovalArea(new int[x][y]);
+//                        // 左键点击标记为易于移除的区域
+//                        painter.paintAtRemove(x, y);
+//                    } else if (SwingUtilities.isRightMouseButton(e)) {
+//                        seamcarver.protectArea(new int[x][y]);
+//                        // 右键点击标记为需要保护的区域
+//                        painter.paintAtProtected(x, y);
+//                    }
+//                    imageLabel.repaint(); // 重绘界面以更新颜色
 //                }
-//                repaint(); // 重绘界面以更新颜色
 //            }
-//            //鼠标释放时，将标记的区域传递给SeamCarver
-//
 //        });
 //    }
-    //创建一个contentAware函数
-    private void contentAware() {
-        JFrame contentAwarePanel = new JFrame("Content Aware");
-        PicturePainter painter = new PicturePainter(pic);
+//
+//    private void contentAware() {
+//        JFrame contentAwarePanel = new JFrame("Content Aware");
+//        PicturePainter painter = new PicturePainter(pic);
+//
+//        contentAwarePanel.add(painter);
+//        contentAwarePanel.setSize(pic.width(), pic.height());
+//        contentAwarePanel.setLocationRelativeTo(null);
+//        contentAwarePanel.setVisible(true);
+//        // 当窗口关闭时，将新的图片显示在imageLabel上
+//        contentAwarePanel.addWindowListener(new WindowAdapter() {
+//            @Override
+//            public void windowClosing(WindowEvent e) {
+//                // 将新的图片显示在imageLabel上
+//                imageLabel.setIcon(new ImageIcon(painter.getNewBufferedImage()));
+//                seamcarver = new SeamCarver(painter.getNewPicture());
+//            }
+//        });
+//    }
+//}
+//
+//    //写一个清楚标记的函数
+//    private void contentAwareClear() {
+//        imageLabel.setIcon(imageIcon);
+//        seamcarver = new SeamCarver(pic);
+//    }
 
-        contentAwarePanel.add(painter);
-        contentAwarePanel.setSize(pic.width(), pic.height());
-        contentAwarePanel.setLocationRelativeTo(null);
-        contentAwarePanel.setVisible(true);
-        //当窗口关闭时，将新的图片显示在imageLabel上
-        contentAwarePanel.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                //将新的图片显示在imageLabel上
-                imageLabel.setIcon(new ImageIcon(painter.getNewBufferedImage()));
-                seamcarver = new SeamCarver(painter.getNewPicture());
-            }
-        });
-    }
-
-    //写一个清楚标记的函数
-    private void contentAwareClear() {
-        imageLabel.setIcon(imageIcon);
-        seamcarver = new SeamCarver(pic);
-    }
 
 
 
