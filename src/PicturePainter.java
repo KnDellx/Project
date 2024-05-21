@@ -67,6 +67,8 @@ public class PicturePainter extends JPanel {
         Graphics2D g = bufferedImage.createGraphics();
         // Set the color and fill an oval at the mouse position
         g.setColor(Color.GREEN);
+        //能否把画笔设置为半透明的
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
         // 画笔大小
         g.fillOval(x - brushSize / 2, y - brushSize / 2, brushSize, brushSize);
         // Dispose of the Graphics2D object

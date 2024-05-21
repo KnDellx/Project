@@ -26,18 +26,25 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
         addMouseMotionListener( this );
 
         //创建处理图片的按钮
-        JButton enlargeButton = new JButton("process");
-        enlargeButton.setIcon(icon("add.png"));
-        enlargeButton.addActionListener(e -> processImage(true));
+        JButton processButton = new JButton("process");
+        processButton.setIcon(icon("add.png"));
+        processButton.addActionListener(e -> processImage());
 
         //创建一个加载图像的按钮
         JButton loadImageButton = new JButton("Load Image");
         loadImageButton.addActionListener(e -> loadImage());
 
+        //创建一个保护区域的按钮
+        JButton protectButton = new JButton("Protect Area");
+        protectButton.addActionListener(e -> protectArea());
+        //创建一个易于清除区域的按钮
+        JButton removeButton = new JButton("remove area");
+        removeButton.addActionListener(e -> removeArea());
+
         //先创建button的集合的实例进行集成化处理
         JPanel buttonPanel = new JPanel(new GridLayout(3,1));
-        buttonPanel.add(enlargeButton);
-        //buttonPanel.add(shrinkButton);
+        buttonPanel.add(protectButton);
+        buttonPanel.add(processButton);
         buttonPanel.add(loadImageButton);
         getContentPane().add(buttonPanel, BorderLayout.EAST);
 
@@ -45,58 +52,116 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
         JLabel titleLabel = new JLabel("Seam Carving GUI", SwingConstants.CENTER);
         // 将标签添加到窗口的底部
         getContentPane().add(titleLabel, BorderLayout.SOUTH);
-
         getContentPane().add(imageLabel, BorderLayout.CENTER);
 
     }
+    private void removeArea(){
 
+    }
+    private void protectArea() {
+        PicturePainter painter = new PicturePainter(pic);
+        try {
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                protected Void doInBackground() throws Exception {
+                    // 初始化protectedArea
+                    SeamCarver seamCarver = new SeamCarver(pic);
+                    seamCarver.initMarkedArea();
+                    // 创建一个新的窗口
+                    JFrame contentAwarePanel = new JFrame("Content Aware");
+                    JLabel picture = new JLabel();
+                    picture.setIcon(pic.getJLabel().getIcon());
+                    contentAwarePanel.add(picture);
+                    contentAwarePanel.setSize(pic.width(), pic.height());
+                    contentAwarePanel.setLocationRelativeTo(null);
+                    contentAwarePanel.setVisible(true);
+                    contentAwarePanel.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-    private void processImage(boolean enlarge) {
-            try {
-                SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                    protected Void doInBackground() throws Exception {
-                        //if (enlarge) {
-                            JFrame jFrame=new JFrame();
-                            JLabel picture=new JLabel();
-                            picture.setIcon(pic.getJLabel().getIcon());
-                            jFrame.add(picture);
-                            jFrame.setSize(pic.width(),pic.height());
-                            jFrame.setVisible(true);
-                            jFrame.setDefaultCloseOperation(2);
-                            jFrame.addComponentListener(new ComponentAdapter() {//让窗口响应大小改变事件
-                                @Override
-                                public void componentResized(ComponentEvent e) {
-                                    int fraWidth = jFrame.getWidth();//获取面板宽度
-                                    int fraHeight = jFrame.getHeight();//获取面板高度
-                                    Picture image;
-                                    if (fraWidth<pic.width()||fraHeight>pic.width()){
-                                        image = seamcarver.shrinkImage(fraWidth, fraHeight);
-                                        }
-                                    else {
-                                         image = seamcarver.enlargeImage(fraWidth, fraHeight);
-                                    }
-                                    pic=image;
-                                    picture.setIcon(pic.getJLabel().getIcon());
-                                }
-                            });
-                        return null;
-                    }
+                    // 在跳出的图窗先进行标记，然后再进行处理，并将标记的区域传回seamCarver中的protectedArea
+                    contentAwarePanel.addMouseMotionListener(new MouseAdapter() {
+                        @Override
+                        public void mouseDragged(MouseEvent e) {
 
-                    protected void done() {
-                        try {
-                            get();  // Call get to rethrow exceptions from doInBackground
-                        } catch (Exception e) {
-                            JOptionPane.showMessageDialog(null, "Error processing image: " + e.getMessage());
+                            // 由于坐标计算是基于组件的左上角所以需要计算偏移量来进行坐标转换
+                            int xOffset = (contentAwarePanel.getWidth() - pic.width()) / 2;
+                            int yOffset = (contentAwarePanel.getHeight() - pic.height()) / 2;
+                            int x = e.getX() - xOffset;
+                            int y = e.getY() - yOffset;
+                            if (x >= 0 && x < pic.width() && y >= 0 && y < pic.height()) {
+                                seamCarver.protectArea(new int[x][y]);
+                                // 这里应该有逻辑来更新picture的图像
+                                painter.paintAt(x, y);
+                            }
                         }
+                    });
+
+                    return null;
+                }
+
+                protected void done() {
+                    try {
+                        get();  // Call get to rethrow exceptions from doInBackground
+                        // 更新原始的imageLabel
+                        imageLabel.repaint();
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(null, "Error processing image: " + e.getMessage());
                     }
-                };
-                worker.execute();
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(null, "Invalid input! Please enter a valid number.");
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+                }
+            };
+            worker.execute();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Error initializing protection: " + e.getMessage());
         }
+    }
+
+
+
+    private void processImage() {
+        try {
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                protected Void doInBackground() throws Exception {
+                    JFrame jFrame=new JFrame();
+                    JLabel picture=new JLabel();
+                    picture.setIcon(pic.getJLabel().getIcon());
+                    jFrame.add(picture);
+                    jFrame.setSize(pic.width(),pic.height());
+                    jFrame.setVisible(true);
+                    jFrame.setDefaultCloseOperation(2);
+                    jFrame.addComponentListener(new ComponentAdapter() {//让窗口响应大小改变事件
+                        @Override
+                        public void componentResized(ComponentEvent e) {
+                            Picture pic2 = pic;
+                            int fraWidth = jFrame.getWidth();//获取面板宽度
+                            int fraHeight = jFrame.getHeight();//获取面板高度
+                            Picture image;
+                            if (fraWidth<pic.width()||fraHeight>pic.width()){
+                                image = seamcarver.shrinkImage(fraWidth, fraHeight);
+                            }
+                            else {
+                                image = seamcarver.enlargeImage(fraWidth, fraHeight);
+                            }
+
+                            picture.setIcon(image.getJLabel().getIcon());
+                            pic = pic2;
+                        }
+                    });
+                    return null;
+                }
+
+                protected void done() {
+                    try {
+                        get();  // Call get to rethrow exceptions from doInBackground
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(null, "Error processing image: " + e.getMessage());
+                    }
+                }
+            };
+            worker.execute();
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(null, "Invalid input! Please enter a valid number.");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     Picture pic;
 
@@ -207,4 +272,3 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
         g.drawRect(c1, c2, w, h);
     }
 }
-

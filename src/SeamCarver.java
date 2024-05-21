@@ -139,13 +139,13 @@ public class SeamCarver  {
             for (int row = 0; row < height(); row++) {
                 //用第几行第几列来代表像素点所在位置
                 cur = col + " " + row;
-            //对于第一列的像素设置前导像素为空并填入能量
-            if (col == 0){
-                energyTo.put(cur,energy(col,row));
-                //???
-                pathTo.put(cur,null);
-            }
-            //遍历该点附近
+                //对于第一列的像素设置前导像素为空并填入能量
+                if (col == 0){
+                    energyTo.put(cur,energy(col,row));
+                    //???
+                    pathTo.put(cur,null);
+                }
+                //遍历该点附近
                 for (int i = row - 1; i <= row + 1; i++)
                     if (i >= 0 && i < height()) {
                         next = (col + 1) + " " + row;
@@ -206,28 +206,28 @@ public class SeamCarver  {
                     energyTo.put(cur,energy(col,row));
                     pathTo.put(cur,null);
                 }
-        //遍历该点附近
-        for (int i = col - 1; i <= col + 1; i++)
-            if (i >= 0 && i < width()) {
-                next = col + " " + (row + 1);
-                double newEng = energy(i, row + 1) + energyTo.get(cur);
-                //如果我们还没有一条新的边，添加一个；或者
-                // 如果这个边代表的能量值更小就代替
-                if (energyTo.get(next) == null || newEng < energyTo.get(next)) {
+                //遍历该点附近
+                for (int i = col - 1; i <= col + 1; i++)
+                    if (i >= 0 && i < width()) {
+                        next = col + " " + (row + 1);
+                        double newEng = energy(i, row + 1) + energyTo.get(cur);
+                        //如果我们还没有一条新的边，添加一个；或者
+                        // 如果这个边代表的能量值更小就代替
+                        if (energyTo.get(next) == null || newEng < energyTo.get(next)) {
 
-                    pathTo.put(next, cur);
-                    energyTo.put(next, newEng);
+                            pathTo.put(next, cur);
+                            energyTo.put(next, newEng);
 
-                    //End at the second to last column, because 'next' involves
-                    // the next column.
-                    //bug
-                    if (row + 1 == height() - 1 && newEng < cost) {
-                        cost = newEng;
-                        end = next;
+                            //End at the second to last column, because 'next' involves
+                            // the next column.
+                            //bug
+                            if (row + 1 == height() - 1 && newEng < cost) {
+                                cost = newEng;
+                                end = next;
+                            }
+                        }
                     }
-                }
             }
-    }
         //模式为水平时，定义路径大小为宽度
         int size = height();
         int[] path = new int[size];
