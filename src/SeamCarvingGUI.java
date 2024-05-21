@@ -1,10 +1,9 @@
 import edu.princeton.cs.algs4.Picture;
+
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.*;
 import java.io.File;
 import java.net.URL;
 
@@ -18,9 +17,6 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
     //设定默认文件夹路径和图标大小
     private static final String ICONS_FOLDER = "icons";
     private static final int ICON_SIZE = 20;
-    private boolean[][] removalArea; // 易于移除的区域
-    private boolean[][] protectedArea; // 保护区域
-
     public SeamCarvingGUI() {
         setSize(600, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -50,21 +46,35 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
 
         //创建一个标记的按钮
         JButton markButton = new JButton("Mark");
-        markButton.addActionListener(e -> addMouseListener());
+        markButton.addActionListener(e -> contentAware());
+
+        //创建一个清除按钮
+        JButton clearButton = new JButton("Clear");
+        clearButton.addActionListener(e -> contentAwareClear());
 
         //先创建button的集合的实例进行集成化处理
-        JPanel buttonPanel = new JPanel(new GridLayout(4,1));
+        JPanel buttonPanel = new JPanel(new GridLayout(5,1));
         buttonPanel.add(enlargeButton);
         buttonPanel.add(shrinkButton);
         buttonPanel.add(loadImageButton);
         buttonPanel.add(markButton);
+        buttonPanel.add(clearButton);
         getContentPane().add(buttonPanel, BorderLayout.EAST);
 
         // 创建一个标签并设置文本
         JLabel titleLabel = new JLabel("Seam Carving GUI", SwingConstants.CENTER);
         // 将标签添加到窗口的底部
         getContentPane().add(titleLabel, BorderLayout.SOUTH);
+
+        //给图片组件加一个边框
+        // 创建一个边框
+        Border border = BorderFactory.createLineBorder(Color.BLACK, 5); // 黑色边框，宽度为5
+        // 将边框设置到JLabel
+        imageLabel.setBorder(border);
+
         getContentPane().add(imageLabel, BorderLayout.CENTER);
+
+
 
 
     }
@@ -119,8 +129,10 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
             File selectedFile = fileChooser.getSelectedFile();
             String imagePath = selectedFile.getAbsolutePath();
             imageIcon = new ImageIcon(imagePath);
-            //设定图片标签的图标为imageIcon，并且大小为原来的1/2
+            //设定图片标签的图标为imageIcon
             imageLabel.setIcon(imageIcon);
+            //设定图片放置在imageLabel中央
+            imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
             pic = new Picture(imagePath);
             seamcarver = new SeamCarver(pic);
         }
@@ -215,36 +227,61 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
             w = w * -1;
         g.drawRect(c1, c2, w, h);
     }
-    private void addMouseListener(){
-        SeamCarver seamcarver = new SeamCarver(pic);
-        //通过鼠标左右键标记图像决定是保护还是易于移除的区域
-        imageLabel.addMouseMotionListener(new MouseAdapter() {
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                super.mouseDragged(e);
-                int x = e.getX();
-                int y = e.getY();
-                if (SwingUtilities.isLeftMouseButton(e)) {
-                    seamcarver.markRemovalArea(new int[x][y]);
-                    //左键点击标记为易于移除的区域
-                    pic.setRGB(x, y, Color.GREEN.getRGB());
-                } else if (SwingUtilities.isRightMouseButton(e)) {
-                    seamcarver.protectArea(new int[x][y]);
-                    //右键点击标记为需要保护的区域
-                    pic.setRGB(x, y, Color.RED.getRGB());
-                }
-                repaint(); // 重绘界面以更新颜色
-            }
-            //鼠标释放时，将标记的区域传递给SeamCarver
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                super.mouseReleased(e);
+//    private void addMouseListener(){
+//
+//        SeamCarver seamcarver = new SeamCarver(pic);
+//        seamcarver.initMarkedArea();
+//        PicturePainter painter = new PicturePainter(pic);
+//        //通过鼠标左右键标记图像决定是保护还是易于移除的区域
+//        imageLabel.addMouseMotionListener(new MouseAdapter() {
+//            @Override
+//            public void mouseDragged(MouseEvent e) {
+//                super.mouseDragged(e);
+//                //由于坐标计算是基于组件的左上角所以需要计算偏移量来进行坐标转换
+//                int xOffset = (imageLabel.getWidth() - pic.width()) / 2;
+//                int yOffset = (imageLabel.getHeight() - pic.height()) / 2;
+//                int x = e.getX() - xOffset;
+//                int y = e.getY() - yOffset;
+//                if (SwingUtilities.isLeftMouseButton(e)) {
+//                    seamcarver.markRemovalArea(new int[x][y]);
+//                    //左键点击标记为易于移除的区域
+//                    painter.paintAt(x, y);
+//                } else if (SwingUtilities.isRightMouseButton(e)) {
+//                    seamcarver.protectArea(new int[x][y]);
+//                    //右键点击标记为需要保护的区域
+//                    painter.paintAt(x, y);
+//                }
+//                repaint(); // 重绘界面以更新颜色
+//            }
+//            //鼠标释放时，将标记的区域传递给SeamCarver
+//
+//        });
+//    }
+    //创建一个contentAware函数
+    private void contentAware() {
+        JFrame contentAwarePanel = new JFrame("Content Aware");
+        PicturePainter painter = new PicturePainter(pic);
 
+        contentAwarePanel.add(painter);
+        contentAwarePanel.setSize(pic.width(), pic.height());
+        contentAwarePanel.setLocationRelativeTo(null);
+        contentAwarePanel.setVisible(true);
+        //当窗口关闭时，将新的图片显示在imageLabel上
+        contentAwarePanel.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                //将新的图片显示在imageLabel上
+                imageLabel.setIcon(new ImageIcon(painter.getNewBufferedImage()));
+                seamcarver = new SeamCarver(painter.getNewPicture());
             }
-
         });
     }
 
+    //写一个清楚标记的函数
+    private void contentAwareClear() {
+        imageLabel.setIcon(imageIcon);
+        seamcarver = new SeamCarver(pic);
+    }
 
 
 

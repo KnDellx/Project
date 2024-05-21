@@ -87,7 +87,7 @@ public class SeamCarver  {
         }
         return pic;
     }
-    private void initMarkedArea() {
+    public void initMarkedArea() {
         protectedArea = new boolean[width()][height()];
         removalArea = new boolean[width()][height()];
     }
