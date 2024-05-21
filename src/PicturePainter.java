@@ -9,27 +9,41 @@ import java.awt.image.BufferedImage;
 public class PicturePainter extends JPanel {
     private Picture picture;
     private BufferedImage bufferedImage;
-    private int brushSize = 20; // 画笔大小
-    private Color brushColor = Color.WHITE; // 画笔颜色
+    private int brushSize; // 画笔大小
+    private Color brushColor; // 画笔颜色
+    private Boolean[][] paintArea;
 
-    public PicturePainter(Picture picture) {
+    public PicturePainter(Picture picture, int brushSize, Color brushColor) {
         // Set the picture and convert it to a BufferedImage
         this.picture = picture;
         this.bufferedImage = pictureToBufferedImage(picture);
+        this.brushSize = brushSize;
+        this.brushColor = brushColor;
+        this.paintArea = new Boolean[picture.width()][picture.height()];
         // Set the preferred size of the panel to the size of the picture
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                paintAt(e.getX(), e.getY());
+                int x = e.getX();
+                int y = e.getY();
+                paintArea[x][y] = true;
+                paintAt(x, y);
             }
         });
         // Add a mouse motion listener to draw when the mouse is dragged
         addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
-                paintAt(e.getX(), e.getY());
+                int x = e.getX();
+                int y = e.getY();
+                paintArea[x][y] = true;
+                paintAt(x, y);
             }
         });
+    }
+
+    public Boolean[][] getPaintArea() {
+        return paintArea;
     }
 
     private BufferedImage pictureToBufferedImage(Picture picture) {
