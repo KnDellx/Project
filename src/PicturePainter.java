@@ -11,7 +11,7 @@ public class PicturePainter extends JPanel {
     private BufferedImage bufferedImage;
     private int brushSize; // 画笔大小
     private Color brushColor; // 画笔颜色
-    private Boolean[][] paintArea;
+    public Boolean[][] paintArea;
 
     public PicturePainter(Picture picture, int brushSize, Color brushColor) {
         // Set the picture and convert it to a BufferedImage
@@ -57,24 +57,7 @@ public class PicturePainter extends JPanel {
         }
         return image;
     }
-    // Convert the BufferedImage to a Picture
-    public Picture getNewPicture() {
-        int width = bufferedImage.getWidth();
-        int height = bufferedImage.getHeight();
-        Picture picture = new Picture(width, height);
 
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                picture.set(x, y, new Color(bufferedImage.getRGB(x, y)));
-            }
-        }
-
-        return picture;
-    }
-
-    public BufferedImage getNewBufferedImage() {
-        return bufferedImage;
-    }
 
     public void paintAt(int x, int y) {
         // Create a Graphics2D object from the BufferedImage

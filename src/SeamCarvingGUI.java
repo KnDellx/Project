@@ -1,9 +1,12 @@
 import edu.princeton.cs.algs4.Picture;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.net.URL;
+import java.util.Arrays;
 
 public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotionListener {
     private ImageIcon imageIcon;
@@ -18,6 +21,9 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
 //    创建要保护/移除区域的矩阵
     private Boolean[][] protectArea;
     private Boolean[][] removeArea;
+    private BufferedImage bufferedImage;
+    private int brushSize; // 画笔大小
+    private Color brushColor; // 画笔颜色
 
     public SeamCarvingGUI() {
 
@@ -60,107 +66,132 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
         getContentPane().add(imageLabel, BorderLayout.CENTER);
 
     }
-
-    private void removeArea(){
+    private void removeArea() {
         PicturePainter painter = new PicturePainter(pic, 10, Color.RED);
-        try {
-            SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                protected Void doInBackground() throws Exception {
-                    // 初始化protectedArea
-                    SeamCarver seamCarver = new SeamCarver(pic);
-                    seamCarver.initMarkedArea();
-                    // 创建一个新的窗口
-                    JFrame paintPanel = new JFrame("Paint Area You Want to Remove");
-                    JLabel picture = new JLabel();
-                    picture.setIcon(pic.getJLabel().getIcon());
-                    paintPanel.add(painter);
-                    paintPanel.setSize(pic.width(), pic.height());
-                    paintPanel.setLocationRelativeTo(null);
-                    paintPanel.setVisible(true);
+        SeamCarver seamCarver = new SeamCarver(pic);
+        seamCarver.initMarkedArea();
 
-                    // 在跳出的图窗先进行标记，然后再进行处理，并将标记的区域传回seamCarver中的protectedArea
-                    paintPanel.addWindowListener(new WindowAdapter() {
-                        @Override
-                        public void windowClosing(WindowEvent e) {
-                            int response = JOptionPane.showConfirmDialog(paintPanel, "Are you sure you want to save removal area and leave?", "Confirm Exit", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-                            if (response == JOptionPane.YES_OPTION) {
-                                paintPanel.dispose();
-                                removeArea = painter.getPaintArea();
-                            }
-                        }
-                    });
-
-                    return null;
-                }
-
-                protected void done() {
-                    try {
-                        get();  // Call get to rethrow exceptions from doInBackground
-                        // 更新原始的imageLabel
-                        imageLabel.repaint();
-                    } catch (Exception e) {
-                        JOptionPane.showMessageDialog(null, "Error processing image: " + e.getMessage());
-                    }
-                }
-            };
-            worker.execute();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Error initializing protection: " + e.getMessage());
+        // 初始化 removeArea 数组
+        removeArea = new Boolean[pic.width()][pic.height()];
+        for (Boolean[] row : removeArea) {
+            Arrays.fill(row, Boolean.FALSE);
         }
+
+        JFrame paintPanel = new JFrame("Paint Area You Want to Remove");
+        paintPanel.setSize(pic.width(), pic.height());
+        paintPanel.setLocationRelativeTo(null);
+        paintPanel.setVisible(true);
+
+        // 将 painter 添加到 paintPanel 中
+        paintPanel.add(painter);
+
+        // 将鼠标事件处理器添加到 painter 对象上
+        painter.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                int x = e.getX();
+                int y = e.getY();
+                removeArea[x][y] = true;
+                painter.paintAt(x, y);
+            }
+        });
+        painter.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                int x = e.getX();
+                int y = e.getY();
+                removeArea[x][y] = true;
+                painter.paintAt(x, y);
+            }
+        });
+        //把removeArea传回seamCarver中的removeArea
+        seamCarver.markRemovalArea(removeArea);
+        Picture image = seamcarver.shrinkImage(300, 200);
+
+
+        paintPanel.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    int response = JOptionPane.showConfirmDialog(paintPanel, "Are you sure you want to save removal area and leave?", "Confirm Exit", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    if (response == JOptionPane.YES_OPTION) {
+                        paintPanel.dispose();
+                       //用弹窗显示裁剪后的图片
+                        JOptionPane.showMessageDialog(null, "Cropped image saved successfully.");
+                        imageLabel.setIcon(image.getJLabel().getIcon());
+                    }
+                });
+            }
+        });
 
     }
 
     private void protectArea() {
+        //和removeArea一样，只是颜色不同
         PicturePainter painter = new PicturePainter(pic, 10, Color.GREEN);
-        try {
-            SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                protected Void doInBackground() throws Exception {
-                    // 初始化protectedArea
-                    SeamCarver seamCarver = new SeamCarver(pic);
-                    seamCarver.initMarkedArea();
-                    // 创建一个新的窗口
-                    JFrame paintPanel = new JFrame("Paint Area You Want to Protect");
-                    JLabel picture = new JLabel();
-                    picture.setIcon(pic.getJLabel().getIcon());
-                    paintPanel.add(painter);
-                    paintPanel.setSize(pic.width(), pic.height());
-                    paintPanel.setLocationRelativeTo(null);
-                    paintPanel.setVisible(true);
+        SeamCarver seamCarver = new SeamCarver(pic);
+        seamCarver.initMarkedArea();
 
-                    // 在跳出的图窗先进行标记，然后再进行处理，并将标记的区域传回seamCarver中的protectedArea
-                    paintPanel.addWindowListener(new WindowAdapter() {
-                        @Override
-                        public void windowClosing(WindowEvent e) {
-                            int response = JOptionPane.showConfirmDialog(paintPanel, "Are you sure you want to save protected area and leave?", "Confirm Exit", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-                            if (response == JOptionPane.YES_OPTION) {
-                                paintPanel.dispose();
-                                protectArea = painter.getPaintArea();
-                            }
-                        }
-                    });
-
-                    return null;
-                }
-
-                protected void done() {
-                    try {
-                        get();  // Call get to rethrow exceptions from doInBackground
-                        // 更新原始的imageLabel
-                        imageLabel.repaint();
-                    } catch (Exception e) {
-                        JOptionPane.showMessageDialog(null, "Error processing image: " + e.getMessage());
-                    }
-                }
-            };
-            worker.execute();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Error initializing protection: " + e.getMessage());
+        // 初始化 protectArea 数组
+        protectArea = new Boolean[pic.width()][pic.height()];
+        for (Boolean[] row : protectArea) {
+            Arrays.fill(row, Boolean.FALSE);
         }
+
+        JFrame paintPanel = new JFrame("Paint Area You Want to Protect");
+        paintPanel.setSize(pic.width(), pic.height());
+        paintPanel.setLocationRelativeTo(null);
+        paintPanel.setVisible(true);
+
+        // 将 painter 添加到 paintPanel 中
+        paintPanel.add(painter);
+
+        // 将鼠标事件处理器添加到 painter 对象上
+        painter.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                int x = e.getX();
+                int y = e.getY();
+                protectArea[x][y] = true;
+                painter.paintAt(x, y);
+            }
+        });
+        painter.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                int x = e.getX();
+                int y = e.getY();
+                protectArea[x][y] = true;
+                painter.paintAt(x, y);
+            }
+        });
+        //把protectArea传回seamCarver中的protectArea
+        seamCarver.protectArea(protectArea);
+        Picture image = seamcarver.shrinkImage(300, 200);
+        imageLabel.setIcon(image.getJLabel().getIcon());
+
+
+        paintPanel.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    int response = JOptionPane.showConfirmDialog(paintPanel, "Are you sure you want to save protection area and leave?", "Confirm Exit", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    if (response == JOptionPane.YES_OPTION) {
+                        paintPanel.dispose();
+
+
+
+
+                    }
+                });
+            }
+        });
     }
 
 
 
     private void processImage() {
+        SeamCarver SEAMCARVER = new SeamCarver(pic);
         try {
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 protected Void doInBackground() throws Exception {
@@ -179,10 +210,10 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
                             int fraHeight = jFrame.getHeight();//获取面板高度
                             Picture image;
                             if (fraWidth<pic.width()||fraHeight>pic.width()){
-                                image = seamcarver.shrinkImage(fraWidth, fraHeight);
+                                image = SEAMCARVER.shrinkImage(fraWidth, fraHeight);
                             }
                             else {
-                                image = seamcarver.enlargeImage(fraWidth, fraHeight);
+                                image = SEAMCARVER.enlargeImage(fraWidth, fraHeight);
                             }
 
                             picture.setIcon(image.getJLabel().getIcon());
@@ -220,6 +251,7 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
             imageLabel.setIcon(imageIcon);
             pic = new Picture(imagePath);
             seamcarver = new SeamCarver(pic);
+
         }
     }
     /*

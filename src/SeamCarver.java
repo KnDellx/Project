@@ -11,25 +11,25 @@ public class SeamCarver  {
     private int height;
     private int width;
     // 一个二维数组，用于标记保护区域
-    private boolean[][] protectedArea;
+    private Boolean[][] protectedArea;
 
     // 一个二维数组，用于标记易于移除的区域
-    private boolean[][] removalArea;
+    private Boolean[][] removalArea;
 
     // 用户调用此方法来保护图像中的某些区域
-    public void protectArea(int[][] area) {
-        for (int[] pixel : area) {
-            int x = pixel[0];
-            int y = pixel[1];
-            protectedArea[x][y] = true;
+    public void protectArea(Boolean[][] area) {
+        for (int x = 0; x < area.length; x++) {
+            for (int y = 0; y < area[0].length; y++) {
+                protectedArea[x][y] = area[x][y];
+            }
         }
     }
     // 用户调用此方法来标记易于移除的区域
-    public void markRemovalArea(int[][] area) {
-        for (int[] pixel : area) {
-            int x = pixel[0];
-            int y = pixel[1];
-            removalArea[x][y] = true;
+    public void markRemovalArea(Boolean[][] area) {
+        for (int x = 0; x < area.length; x++) {
+            for (int y = 0; y < area[0].length; y++) {
+                removalArea[x][y] = area[x][y];
+            }
         }
     }
 
@@ -88,8 +88,8 @@ public class SeamCarver  {
         return pic;
     }
     public void initMarkedArea() {
-        protectedArea = new boolean[width()][height()];
-        removalArea = new boolean[width()][height()];
+        protectedArea = new Boolean[width()][height()];
+        removalArea = new Boolean[width()][height()];
     }
 
     // energy of pixel at column x and row y
