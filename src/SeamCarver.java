@@ -3,21 +3,42 @@ import edu.princeton.cs.algs4.Picture;
 import java.awt.*;
 import java.util.HashMap;
 
-public class SeamCarver {
+public class SeamCarver  {
+    //当前图片
     private Picture pic;
+    //定义模式是水平还是垂直
     private String mode;
     private int height;
     private int width;
+    // 一个二维数组，用于标记保护区域
+    private boolean[][] protectedArea;
 
+    // 一个二维数组，用于标记易于移除的区域
+    private boolean[][] removalArea;
 
+    // 用户调用此方法来保护图像中的某些区域
+    public void protectArea(int[][] area) {
+        for (int[] pixel : area) {
+            int x = pixel[0];
+            int y = pixel[1];
+            protectedArea[x][y] = true;
+        }
+    }
+    // 用户调用此方法来标记易于移除的区域
+    public void markRemovalArea(int[][] area) {
+        for (int[] pixel : area) {
+            int x = pixel[0];
+            int y = pixel[1];
+            removalArea[x][y] = true;
+        }
+    }
 
 
     // create a seam carver object based on the given picture
-    public SeamCarver(Picture picture){
+    public SeamCarver(Picture picture) {
         pic = new Picture(picture);
         width = pic.width();
         height = pic.height();
-
     }
 
 
@@ -66,9 +87,26 @@ public class SeamCarver {
         }
         return pic;
     }
+    private void initMarkedArea() {
+        protectedArea = new boolean[width()][height()];
+        removalArea = new boolean[width()][height()];
+    }
 
     // energy of pixel at column x and row y
     public double energy(int x, int y){
+        //考虑保护和易于移除的情况
+        //首先当protectedArea没有被初始化时，则忽略
+        if(protectedArea != null) {
+            if(protectedArea[x][y]) {
+                return 1000;
+            }
+        }
+        //和保护区域逻辑一样
+        if(removalArea != null) {
+            if(removalArea[x][y]) {
+                return 0;
+            }
+        }
         //设定 边界情况都为1000
         if(x == 0||y == 0||x == width() - 1||y == height() - 1){
             return 1000;
