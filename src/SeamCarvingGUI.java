@@ -42,7 +42,7 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
         JButton protectButton = new JButton("Protect Area");
         protectButton.addActionListener(e -> protectArea());
         //创建一个易于清除区域的按钮
-        JButton removeButton = new JButton("Remove area");
+        JButton removeButton = new JButton("Remove Area");
         removeButton.addActionListener(e -> removeArea());
 
         //先创建button的集合的实例进行集成化处理
@@ -85,7 +85,7 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
                             int response = JOptionPane.showConfirmDialog(paintPanel, "Are you sure you want to save removal area and leave?", "Confirm Exit", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
                             if (response == JOptionPane.YES_OPTION) {
                                 paintPanel.dispose();
-                                protectArea = painter.getPaintArea();
+                                removeArea = painter.getPaintArea();
                             }
                         }
                     });
