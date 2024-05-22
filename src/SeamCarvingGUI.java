@@ -155,10 +155,8 @@ public class SeamCarvingGUI extends JFrame  {
                 painter.paintAt(x, y);
             }
         });
-        //把protectArea传回seamCarver中的protectArea
-        SEAMCARVER.protectArea(protectArea);
-        Picture image = SEAMCARVER.shrinkImage(300, 200);
-        imageLabel.setIcon(image.getJLabel().getIcon());
+
+
 
 
         paintPanel.addWindowListener(new WindowAdapter() {
@@ -167,9 +165,9 @@ public class SeamCarvingGUI extends JFrame  {
                 SwingUtilities.invokeLater(() -> {
                     int response = JOptionPane.showConfirmDialog(paintPanel, "Are you sure you want to save protection area and leave?", "Confirm Exit", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
                     if (response == JOptionPane.YES_OPTION) {
+                        //把protectArea传回seamCarver中的protectArea
+                        SEAMCARVER.protectArea(protectArea);
                         paintPanel.dispose();
-
-
                     }
                 });
             }
@@ -178,6 +176,11 @@ public class SeamCarvingGUI extends JFrame  {
 
 
     private void processImage() {
+        //开始前检查是否有图片，没有就弹窗报错
+        if (pic == null) {
+            JOptionPane.showMessageDialog(null, "No image loaded!");
+            return;
+        }
         try {
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 protected Void doInBackground() throws Exception {
@@ -195,7 +198,7 @@ public class SeamCarvingGUI extends JFrame  {
                             int fraWidth = jFrame.getWidth();//获取面板宽度
                             int fraHeight = jFrame.getHeight();//获取面板高度
                             Picture image;
-                            if (fraWidth < pic2.width() || fraHeight < pic2.height()) {
+                            if (fraWidth < pic.width() || fraHeight < pic.height()) {
                                 image = SEAMCARVER.shrinkImage(fraWidth, fraHeight);
                             } else {
                                 image = SEAMCARVER.enlargeImage(fraWidth, fraHeight);
@@ -237,6 +240,10 @@ public class SeamCarvingGUI extends JFrame  {
             pic = new Picture(imagePath);
             SEAMCARVER.addPic(pic);
 
+        }
+        //写一个如果没有选择文件就弹窗报错
+        else {
+            JOptionPane.showMessageDialog(null, "No file selected!");
         }
     }
 

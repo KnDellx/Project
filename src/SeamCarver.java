@@ -36,6 +36,7 @@ public class SeamCarver  {
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
+        if (picture == null) throw new java.lang.NullPointerException();
         pic = new Picture(picture);
         width = pic.width();
         height = pic.height();
@@ -134,8 +135,8 @@ public class SeamCarver  {
         Color color3 = picture().get(x,y - 1);
         Color color4 = picture().get(x,y + 1);
         //计算沿着x,y方向分别的能量数值
-        double deltaX = Math.pow(Math.abs(color1.getRed() - color2.getRed()),2) + Math.pow(Math.abs(color1.getBlue() - color2.getBlue()),2) + Math.pow(Math.abs(color1.getGreen() - color2.getGreen()),2);
-        double deltaY = Math.pow(Math.abs(color3.getRed() - color4.getRed()),2) + Math.pow(Math.abs(color3.getBlue() - color4.getBlue()),2) + Math.pow(Math.abs(color3.getGreen() - color4.getGreen()),2);
+        double deltaX = Math.pow(color1.getRed() - color2.getRed(),2) + Math.pow(color1.getBlue() - color2.getBlue(),2) + Math.pow(color1.getGreen() - color2.getGreen(),2);
+        double deltaY = Math.pow(color3.getRed() - color4.getRed(),2) + Math.pow(color3.getBlue() - color4.getBlue(),2) + Math.pow(color3.getGreen() - color4.getGreen(),2);
         return Math.sqrt(deltaX + deltaY);
     }
 
@@ -397,12 +398,5 @@ public class SeamCarver  {
         pic = new Picture(newOne);
     }
 
-    public Boolean[][] getProtectedArea() {
-        return protectedArea;
-    }
-
-    public Boolean[][] getRemovalArea() {
-        return removalArea;
-    }
 }
 
