@@ -3,27 +3,23 @@ import edu.princeton.cs.algs4.Picture;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
 
-public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotionListener {
+public class SeamCarvingGUI extends JFrame  {
     private ImageIcon imageIcon;
     //创建一个图标
     private JLabel imageLabel = new JLabel();
-    private SeamCarver seamcarver;
+    private SeamCarver SEAMCARVER = new SeamCarver();
 
     //设定默认文件夹路径和图标大小
     private static final String ICONS_FOLDER = "icons";
     private static final int ICON_SIZE = 20;
 
-//    创建要保护/移除区域的矩阵
+    //创建要保护/移除区域的矩阵
     private Boolean[][] protectArea;
     private Boolean[][] removeArea;
-    private BufferedImage bufferedImage;
-    private int brushSize; // 画笔大小
-    private Color brushColor; // 画笔颜色
 
     public SeamCarvingGUI() {
 
@@ -31,9 +27,6 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
-
-        addMouseListener(this);
-        addMouseMotionListener( this );
 
         //创建处理图片的按钮
         JButton processButton = new JButton("process");
@@ -52,7 +45,7 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
         removeButton.addActionListener(e -> removeArea());
 
         //先创建button的集合的实例进行集成化处理
-        JPanel buttonPanel = new JPanel(new GridLayout(4,1));
+        JPanel buttonPanel = new JPanel(new GridLayout(4, 1));
         buttonPanel.add(protectButton);
         buttonPanel.add(removeButton);
         buttonPanel.add(processButton);
@@ -66,10 +59,10 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
         getContentPane().add(imageLabel, BorderLayout.CENTER);
 
     }
+
     private void removeArea() {
         PicturePainter painter = new PicturePainter(pic, 10, Color.RED);
-        SeamCarver seamCarver = new SeamCarver(pic);
-        seamCarver.initMarkedArea();
+        SEAMCARVER.initMarkedArea();
 
         // 初始化 removeArea 数组
         removeArea = new Boolean[pic.width()][pic.height()];
@@ -93,6 +86,8 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
                 int y = e.getY();
                 removeArea[x][y] = true;
                 painter.paintAt(x, y);
+
+
             }
         });
         painter.addMouseMotionListener(new MouseAdapter() {
@@ -104,9 +99,6 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
                 painter.paintAt(x, y);
             }
         });
-        //把removeArea传回seamCarver中的removeArea
-        seamCarver.markRemovalArea(removeArea);
-        Picture image = seamcarver.shrinkImage(300, 200);
 
 
         paintPanel.addWindowListener(new WindowAdapter() {
@@ -115,10 +107,9 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
                 SwingUtilities.invokeLater(() -> {
                     int response = JOptionPane.showConfirmDialog(paintPanel, "Are you sure you want to save removal area and leave?", "Confirm Exit", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
                     if (response == JOptionPane.YES_OPTION) {
+                        //把removeArea传回seamCarver中的removeArea
+                        SEAMCARVER.markRemovalArea(removeArea);
                         paintPanel.dispose();
-                       //用弹窗显示裁剪后的图片
-                        JOptionPane.showMessageDialog(null, "Cropped image saved successfully.");
-                        imageLabel.setIcon(image.getJLabel().getIcon());
                     }
                 });
             }
@@ -129,8 +120,7 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
     private void protectArea() {
         //和removeArea一样，只是颜色不同
         PicturePainter painter = new PicturePainter(pic, 10, Color.GREEN);
-        SeamCarver seamCarver = new SeamCarver(pic);
-        seamCarver.initMarkedArea();
+        SEAMCARVER.initMarkedArea();
 
         // 初始化 protectArea 数组
         protectArea = new Boolean[pic.width()][pic.height()];
@@ -166,8 +156,8 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
             }
         });
         //把protectArea传回seamCarver中的protectArea
-        seamCarver.protectArea(protectArea);
-        Picture image = seamcarver.shrinkImage(300, 200);
+        SEAMCARVER.protectArea(protectArea);
+        Picture image = SEAMCARVER.shrinkImage(300, 200);
         imageLabel.setIcon(image.getJLabel().getIcon());
 
 
@@ -180,8 +170,6 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
                         paintPanel.dispose();
 
 
-
-
                     }
                 });
             }
@@ -189,17 +177,15 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
     }
 
 
-
     private void processImage() {
-        SeamCarver SEAMCARVER = new SeamCarver(pic);
         try {
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 protected Void doInBackground() throws Exception {
-                    JFrame jFrame=new JFrame();
-                    JLabel picture=new JLabel();
+                    JFrame jFrame = new JFrame();
+                    JLabel picture = new JLabel();
                     picture.setIcon(pic.getJLabel().getIcon());
                     jFrame.add(picture);
-                    jFrame.setSize(pic.width(),pic.height());
+                    jFrame.setSize(pic.width(), pic.height());
                     jFrame.setVisible(true);
                     jFrame.setDefaultCloseOperation(2);
                     jFrame.addComponentListener(new ComponentAdapter() {//让窗口响应大小改变事件
@@ -209,10 +195,9 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
                             int fraWidth = jFrame.getWidth();//获取面板宽度
                             int fraHeight = jFrame.getHeight();//获取面板高度
                             Picture image;
-                            if (fraWidth<pic.width()||fraHeight>pic.width()){
+                            if (fraWidth < pic2.width() || fraHeight < pic2.height()) {
                                 image = SEAMCARVER.shrinkImage(fraWidth, fraHeight);
-                            }
-                            else {
+                            } else {
                                 image = SEAMCARVER.enlargeImage(fraWidth, fraHeight);
                             }
 
@@ -250,10 +235,11 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
             imageIcon = new ImageIcon(imagePath);
             imageLabel.setIcon(imageIcon);
             pic = new Picture(imagePath);
-            seamcarver = new SeamCarver(pic);
+            SEAMCARVER.addPic(pic);
 
         }
     }
+
     /*
     创建一个缩放图像的函数，使图像显示时不会超出窗口并且为合适的大小
      */
@@ -268,84 +254,5 @@ public class SeamCarvingGUI extends JFrame implements MouseListener, MouseMotion
             height = icon.getIconHeight() / dims[0];
         }
         return new ImageIcon(icon.getImage().getScaledInstance(width, height, Image.SCALE_FAST));
-    }
-
-    int drag_status=0,c1,c2,c3,c4;
-
-    public void draggedScreen()throws Exception
-    {
-        seamcarver=new SeamCarver(pic);
-        int w = c1 - c3;
-        int h = c2 - c4;
-        System.out.println(c1+" "+c2+" " +c3+" "+c4);
-        w = w * -1;
-        h = h * -1;
-        Picture shrinkedImage = seamcarver.shrinkImage(w, h);
-        System.out.println("Cropped image saved successfully.");
-        seamcarver=new SeamCarver(shrinkedImage);
-        imageLabel.setIcon(shrinkedImage.getJLabel().getIcon());
-    }
-
-
-    @Override
-    public void mouseClicked(MouseEvent arg0) {
-    }
-
-    @Override
-    public void mouseEntered(MouseEvent arg0) {
-    }
-
-    @Override
-    public void mouseExited(MouseEvent arg0) {
-    }
-
-    @Override
-    public void mousePressed(MouseEvent arg0) {
-        repaint();
-        c1=arg0.getX();
-        c2=arg0.getY();
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent arg0) {
-        repaint();
-        if(drag_status==1)
-        {
-            c3=arg0.getX();
-            c4=arg0.getY();
-            try
-            {
-                draggedScreen();
-            }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    @Override
-    public void mouseDragged(MouseEvent arg0) {
-        repaint();
-        drag_status=1;
-        c3=arg0.getX();
-        c4=arg0.getY();
-    }
-
-    @Override
-    public void mouseMoved(MouseEvent arg0) {
-
-    }
-
-    public void paint(Graphics g)
-    {
-        super.paint(g);
-        int w = c1 - c3;
-        int h = c2 - c4;
-        w = w* -1;
-        h = h * -1;
-        if(w<0)
-            w = w * -1;
-        g.drawRect(c1, c2, w, h);
     }
 }

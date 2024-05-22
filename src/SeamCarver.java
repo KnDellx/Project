@@ -28,7 +28,7 @@ public class SeamCarver  {
     public void markRemovalArea(Boolean[][] area) {
         for (int x = 0; x < area.length; x++) {
             for (int y = 0; y < area[0].length; y++) {
-                removalArea[x][y] = area[x][y];
+                this.removalArea[x][y] = area[x][y];
             }
         }
     }
@@ -37,6 +37,18 @@ public class SeamCarver  {
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
         pic = new Picture(picture);
+        width = pic.width();
+        height = pic.height();
+    }
+
+    public SeamCarver() {
+        pic = null;
+        width = 0;
+        height = 0;
+    }
+
+    public void addPic(Picture pic) {
+        this.pic = pic;
         width = pic.width();
         height = pic.height();
     }
@@ -88,8 +100,8 @@ public class SeamCarver  {
         return pic;
     }
     public void initMarkedArea() {
-        protectedArea = new Boolean[width()][height()];
-        removalArea = new Boolean[width()][height()];
+        this.protectedArea = new Boolean[width()][height()];
+        this.removalArea = new Boolean[width()][height()];
     }
 
     // energy of pixel at column x and row y
@@ -97,14 +109,14 @@ public class SeamCarver  {
         //考虑保护和易于移除的情况
         //首先当protectedArea没有被初始化时，则忽略
         if(protectedArea != null) {
-            if(protectedArea[x][y]) {
+            if(protectedArea[x][y] != null && protectedArea[x][y]) {
                 return 1000;
             }
         }
         //和保护区域逻辑一样
         if(removalArea != null) {
-            if(removalArea[x][y]) {
-                return 0;
+            if(removalArea[x][y] != null && removalArea[x][y]) {
+                return -1000;
             }
         }
         //设定 边界情况都为1000
@@ -124,7 +136,7 @@ public class SeamCarver  {
         //计算沿着x,y方向分别的能量数值
         double deltaX = Math.pow(Math.abs(color1.getRed() - color2.getRed()),2) + Math.pow(Math.abs(color1.getBlue() - color2.getBlue()),2) + Math.pow(Math.abs(color1.getGreen() - color2.getGreen()),2);
         double deltaY = Math.pow(Math.abs(color3.getRed() - color4.getRed()),2) + Math.pow(Math.abs(color3.getBlue() - color4.getBlue()),2) + Math.pow(Math.abs(color3.getGreen() - color4.getGreen()),2);
-        return deltaX + deltaY;
+        return Math.sqrt(deltaX + deltaY);
     }
 
     // 水平切割
@@ -213,6 +225,7 @@ public class SeamCarver  {
                         double newEng = energy(i, row + 1) + energyTo.get(cur);
                         //如果我们还没有一条新的边，添加一个；或者
                         // 如果这个边代表的能量值更小就代替
+
                         if (energyTo.get(next) == null || newEng < energyTo.get(next)) {
 
                             pathTo.put(next, cur);
@@ -227,6 +240,7 @@ public class SeamCarver  {
                             }
                         }
                     }
+
             }
         //模式为水平时，定义路径大小为宽度
         int size = height();
@@ -382,4 +396,13 @@ public class SeamCarver  {
         width = width - 1;
         pic = new Picture(newOne);
     }
+
+    public Boolean[][] getProtectedArea() {
+        return protectedArea;
+    }
+
+    public Boolean[][] getRemovalArea() {
+        return removalArea;
+    }
 }
+
