@@ -281,10 +281,8 @@ public class SeamCarvingGUI extends JFrame {
                         public void windowClosing(WindowEvent e) {
                             SwingUtilities.invokeLater(() -> {
                                 //加一个关闭窗口监听器，若关闭窗口则弹窗提示是否保存图片
-
                                 //若选择保存，则当前处理后的图片显示在主窗口中
                                 //若不选择保存，则主窗口显示原图片originalPic
-
                                 int response = JOptionPane.showConfirmDialog(null, "Do you want to save the processed image?", "Save Image", JOptionPane.YES_NO_OPTION);
                                 if (response == JOptionPane.YES_OPTION) {
                                     //弹窗可自由选择保存路径

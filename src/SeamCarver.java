@@ -81,7 +81,7 @@ public class SeamCarver {
     }
     //写一个重新计算能量的函数
     public void reCalculateEnergy(){
-        energy = new double[h][w];
+        // recalculate the energy array
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 energy[i][j] = calcEnergy(j, i);
@@ -484,7 +484,6 @@ public class SeamCarver {
         // Populate replacement arrays, inserting pixels in the seam
         for (int i = 0; i < height(); i++) {
             int s = seam[i];
-
             for (int j = 0; j <= s; j++) {
                 newColor[i][j] = color[i][j];
                 newEnergy[i][j] = energy[i][j];
@@ -513,7 +512,6 @@ public class SeamCarver {
         }
 
         color = newColor;
-        energy = newEnergy;
         w++;
 
         // Recalculate the energy along the seam
@@ -522,22 +520,24 @@ public class SeamCarver {
 
             // Left edge added
             if (s == 0) {
-                energy[i][s] = calcEnergy(s, i);
-                energy[i][s + 1] = calcEnergy(s + 1, i);
+                newEnergy[i][s] = calcEnergy(s, i);
+                newEnergy[i][s + 1] = calcEnergy(s + 1, i);
             }
 
             // Right edge added
             else if (s == width() - 1) {
-                energy[i][s] = calcEnergy(s, i);
-                energy[i][s - 1] = calcEnergy(s - 1, i);
+                newEnergy[i][s] = calcEnergy(s, i);
+                newEnergy[i][s - 1] = calcEnergy(s - 1, i);
             }
 
             // Middle pixel added
             else {
-                energy[i][s] = calcEnergy(s, i);
-                energy[i][s + 1] = calcEnergy(s + 1, i);
+                //energy也采用折中的方式计算
+                newEnergy[i][s] = calcEnergy(s, i);
+                newEnergy[i][s + 1] = calcEnergy(s + 1, i);
             }
         }
+        energy = newEnergy;
     }
 
     //仿照放大竖直写一个放大水平的方法
@@ -592,7 +592,6 @@ public class SeamCarver {
         }
 
         color = newColor;
-        energy = newEnergy;
         h++;
 
         // Recalculate the energy along the seam
@@ -601,22 +600,23 @@ public class SeamCarver {
 
             // Top edge added
             if (s == 0) {
-                energy[s][j] = calcEnergy(j, s);
-                energy[s + 1][j] = calcEnergy(j, s + 1);
+                newEnergy[s][j] = calcEnergy(j, s);
+                newEnergy[s + 1][j] = calcEnergy(j, s + 1);
             }
 
             // Bottom edge added
             else if (s == height() - 1) {
-                energy[s][j] = calcEnergy(j, s);
-                energy[s - 1][j] = calcEnergy(j, s - 1);
+                newEnergy[s][j] = calcEnergy(j, s);
+                newEnergy[s - 1][j] = calcEnergy(j, s - 1);
             }
 
             // Middle pixel added
             else {
-                energy[s][j] = calcEnergy(j, s);
-                energy[s + 1][j] = calcEnergy(j, s + 1);
+                newEnergy[s][j] = calcEnergy(j, s);
+                newEnergy[s + 1][j] = calcEnergy(j, s + 1);
             }
         }
+        energy = newEnergy;
     }
     //写一个放大图片的代码
     public Picture enlargeImage(int wid, int het){
