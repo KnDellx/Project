@@ -1,3 +1,4 @@
+
 import edu.princeton.cs.algs4.Picture;
 
 import javax.swing.*;
@@ -7,11 +8,11 @@ import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
 
-public class SeamCarvingGUI extends JFrame  {
+public class SeamCarvingGUI extends JFrame {
     private ImageIcon imageIcon;
     //创建一个图标
     private JLabel imageLabel = new JLabel();
-    private SeamCarver SEAMCARVER = new SeamCarver();
+    private src.SeamCarver SEAMCARVER ;
 
     //设定默认文件夹路径和图标大小
     private static final String ICONS_FOLDER = "icons";
@@ -20,6 +21,8 @@ public class SeamCarvingGUI extends JFrame  {
     //创建要保护/移除区域的矩阵
     private Boolean[][] protectArea;
     private Boolean[][] removeArea;
+    private Picture pic;
+    private Picture originalPic;
 
     public SeamCarvingGUI() {
 
@@ -46,6 +49,7 @@ public class SeamCarvingGUI extends JFrame  {
 
         //先创建button的集合的实例进行集成化处理
         JPanel buttonPanel = new JPanel(new GridLayout(4, 1));
+
         buttonPanel.add(protectButton);
         buttonPanel.add(removeButton);
         buttonPanel.add(processButton);
@@ -59,8 +63,7 @@ public class SeamCarvingGUI extends JFrame  {
         getContentPane().add(imageLabel, BorderLayout.CENTER);
 
     }
-
-    private void removeArea() {
+    public void removeArea() {
         PicturePainter painter = new PicturePainter(pic, 10, Color.RED);
         SEAMCARVER.initMarkedArea();
 
@@ -109,6 +112,8 @@ public class SeamCarvingGUI extends JFrame  {
                     if (response == JOptionPane.YES_OPTION) {
                         //把removeArea传回seamCarver中的removeArea
                         SEAMCARVER.markRemovalArea(removeArea);
+                        //更新SEAMCARVER类中能量计算的方法
+
                         paintPanel.dispose();
                     }
                 });
@@ -194,7 +199,7 @@ public class SeamCarvingGUI extends JFrame  {
                     jFrame.addComponentListener(new ComponentAdapter() {//让窗口响应大小改变事件
                         @Override
                         public void componentResized(ComponentEvent e) {
-                            Picture pic2 = pic;
+
                             int fraWidth = jFrame.getWidth();//获取面板宽度
                             int fraHeight = jFrame.getHeight();//获取面板高度
                             Picture image;
@@ -205,7 +210,26 @@ public class SeamCarvingGUI extends JFrame  {
                             }
 
                             picture.setIcon(image.getJLabel().getIcon());
-                            pic = pic2;
+
+                        }
+                    });
+                    jFrame.addWindowListener(new WindowAdapter() {
+                        @Override
+                        public void windowClosing(WindowEvent e) {
+                            SwingUtilities.invokeLater(() -> {
+                                //加一个关闭窗口监听器，若关闭窗口则弹窗提示是否保存图片
+
+                                //若选择保存，则当前处理后的图片显示在主窗口中
+                                //若不选择保存，则主窗口显示原图片originalPic
+
+                                int response = JOptionPane.showConfirmDialog(null, "Do you want to save the processed image?", "Save Image", JOptionPane.YES_NO_OPTION);
+                                if (response == JOptionPane.YES_OPTION) {
+                                    pic.save("processed.jpg");
+                                } else {
+                                    imageLabel.setIcon(originalPic.getJLabel().getIcon());
+                                    pic = originalPic;
+                                }
+                            });
                         }
                     });
                     return null;
@@ -227,29 +251,23 @@ public class SeamCarvingGUI extends JFrame  {
         }
     }
 
-    Picture pic;
-
-    private void loadImage() {
+    public void loadImage() {
+        // Load an image from a file
         JFileChooser fileChooser = new JFileChooser();
-        int returnValue = fileChooser.showOpenDialog(null);
-        if (returnValue == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            String imagePath = selectedFile.getAbsolutePath();
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            String imagePath = file.getAbsolutePath();
+            // Update the image label
             imageIcon = new ImageIcon(imagePath);
             imageLabel.setIcon(imageIcon);
+            // Load the image into the SeamCarver
             pic = new Picture(imagePath);
-            SEAMCARVER.addPic(pic);
+            originalPic = new Picture(imagePath);
+            SEAMCARVER = new src.SeamCarver(pic);
+        }
 
-        }
-        //写一个如果没有选择文件就弹窗报错
-        else {
-            JOptionPane.showMessageDialog(null, "No file selected!");
-        }
     }
-
-    /*
-    创建一个缩放图像的函数，使图像显示时不会超出窗口并且为合适的大小
-     */
     private ImageIcon icon(String filename, int... dims) {
         URL url = getClass().getResource(ICONS_FOLDER + "/" + filename);
         ImageIcon icon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(url));

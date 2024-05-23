@@ -1,26 +1,44 @@
+package src;
+
 import edu.princeton.cs.algs4.Picture;
+import java.awt.Color;
+import java.util.Arrays;
 
-import java.awt.*;
-import java.util.HashMap;
+public class SeamCarver {
 
-public class SeamCarver  {
-    //当前图片
-    private Picture pic;
-    //定义模式是水平还是垂直
-    private String mode;
-    private int height;
-    private int width;
+    // The representation of the given image
+    private int[][] color;
+
+    // The energy of each pixel in the image
+    private double[][] energy;
+
+    // Arrays and sinks for finding the shortest path through the image energy
+    private double[][] distTo;
+    private double distToSink;
+    private int[][] edgeTo;
+    private int edgeToSink;
+
+    // The current width and height
+    private int w;
+    private int h;
     // 一个二维数组，用于标记保护区域
-    private Boolean[][] protectedArea;
+    public Boolean[][] protectedArea;
 
     // 一个二维数组，用于标记易于移除的区域
-    private Boolean[][] removalArea;
+    public Boolean[][] removalArea;
 
+    // False if finding or removing a vertical seam,
+    // true if finding or removing a horizontal seam.
+    private boolean transposed;
+    public void initMarkedArea() {
+        this.protectedArea = new Boolean[width()][height()];
+        this.removalArea = new Boolean[width()][height()];
+    }
     // 用户调用此方法来保护图像中的某些区域
     public void protectArea(Boolean[][] area) {
         for (int x = 0; x < area.length; x++) {
             for (int y = 0; y < area[0].length; y++) {
-                protectedArea[x][y] = area[x][y];
+                this.protectedArea[x][y] = area[x][y];
             }
         }
     }
@@ -33,64 +51,396 @@ public class SeamCarver  {
         }
     }
 
-
-    // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
         if (picture == null) throw new java.lang.NullPointerException();
-        pic = new Picture(picture);
-        width = pic.width();
-        height = pic.height();
-    }
 
-    public SeamCarver() {
-        pic = null;
-        width = 0;
-        height = 0;
-    }
+        // Initialize the dimensions of the picture
+        w = picture.width();
+        h = picture.height();
 
-    public void addPic(Picture pic) {
-        this.pic = pic;
-        width = pic.width();
-        height = pic.height();
-    }
+        // Store the picture's color information in an int array,
+        // using the RGB coding described at:
+        // http://docs.oracle.com/javase/8/docs/api/java/awt/Color.html#getRGB()
+        color = new int[h][w];
 
+        // Set the dimensions of the energy array
+        energy = new double[h][w];
 
-    // current picture
-    public Picture picture(){
-        return pic;
-    }
-
-    // width of current picture
-    public int width(){
-        return pic.width();
-    }
-
-    // height of current picture
-    public int height(){
-        return pic.height();
-    }
-    public Picture enlargeImage(int wid, int het){
-        int colEnlarged = wid - pic.width();
-        int rowEnlarged = het - pic.height();
-        //保存旧的图片
-        SeamCarver oldseamcarver = new SeamCarver(pic);
-        //先放大高度
-        for (int col = 0; col < colEnlarged; col++) {
-            //每次找到一个seam后remove该seam进而选取第二小的seam,以此类推
-            addVerticalSeam(oldseamcarver.findVerticalSeam());
-            oldseamcarver.removeVerticalSeam(oldseamcarver.findVerticalSeam());
+        // Store color information
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                color[i][j] = picture.get(j, i).getRGB();
+            }
         }
-        for (int row = 0; row < rowEnlarged; row++) {
-            //每次找到一个水平seam后remove掉去寻找第二小的seam以此类推
-            addHorizontalSeam(oldseamcarver.findHorizontalSeam());
-            oldseamcarver.removeHorizontalSeam(oldseamcarver.findHorizontalSeam());
+
+        // Pre-calculate the energy array
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                energy[i][j] = calcEnergy(j, i);
+            }
         }
-        return pic;
     }
 
+    public Picture picture() {
+
+        // Create and return a new pic with the stored color information
+        Picture pic = new Picture(width(), height());
+        for (int i = 0; i < height(); i++) {
+            for (int j = 0; j < width(); j++) {
+                pic.set(j, i, new Color(color[i][j]));
+            }
+        }
+        return new Picture(pic);
+    }
+    public int width() {
+        return w;
+    }
+    public int height() {
+        return h;
+    }
+    private double calcEnergy(int x, int y) {
+        //考虑保护和易于移除的情况
+        //首先当protectedArea没有被初始化时，则忽略
+        if(protectedArea != null) {
+            if(protectedArea[x][y] != null && protectedArea[x][y]) {
+                return Double.MAX_VALUE;
+            }
+        }
+        //和保护区域逻辑一样
+        if(removalArea != null) {
+            if(removalArea[x][y] != null && removalArea[x][y]) {
+                return -Double.MAX_VALUE;
+            }
+        }
+        if (x >= width() || y >= height() || x < 0 || y < 0)
+            throw new java.lang.IndexOutOfBoundsException();
+
+        // Return 1000.0 for border pixels
+        if (x == 0 || y == 0 || x == width() - 1 || y == height() - 1)
+            return (double) 1000;
+
+        // Store pixel values in Color objects.
+        Color up = new Color(color[y - 1][x]);
+        Color down = new Color(color[y + 1][x]);
+        Color left = new Color(color[y][x - 1]);
+        Color right = new Color(color[y][x + 1]);
+
+        return Math.sqrt(gradient(up, down) + gradient(left, right));
+    }
+    private double gradient(Color a, Color b) {
+        return Math.pow(a.getRed() - b.getRed(), 2) +
+                Math.pow(a.getBlue() - b.getBlue(), 2) +
+                Math.pow(a.getGreen() - b.getGreen(), 2);
+    }
+    public int[] findHorizontalSeam() {
+        transposed = true;
+
+        // Reset our distTo and edgeTo values for a new search
+        distToSink = Double.POSITIVE_INFINITY;
+        edgeToSink = Integer.MAX_VALUE;
+        distTo = new double[h][w];
+        edgeTo = new int[h][w];
+        for (double[] r: distTo) Arrays.fill(r, Double.POSITIVE_INFINITY);
+        for (int[] r: edgeTo) Arrays.fill(r, Integer.MAX_VALUE);
+
+        // Relax the entire left column, since this is our starting column
+        for (int i = 0; i < height(); i++) {
+            distTo[i][0] = (double) 1000;
+            edgeTo[i][0] = -1;
+        }
+
+        // Visit all pixels from the left side, diagonally to the right,
+        // in keeping with topological order.
+        // The topological order is the reverse of the DFS post-order,
+        // which visits the top-most adjacent pixel first, before it visits
+        // the pixels below.
+        for (int depth = height() - 1; depth > 0; depth--) {
+            for (int out = 0; out < width() && depth + out < height(); out++) {
+                visit(depth + out, out);
+            }
+        }
+
+        // Visit all pixels from the top, diagonally to the right,
+        // in keeping with the topological order described above.
+        for (int top = 0; top < width(); top++) {
+            for (int depth = 0;
+                 depth + top < width() && depth < height();
+                 depth++) {
+                visit(depth, depth + top);
+            }
+        }
+
+        // Populate seam[] with the shortest path
+        int[] seam = new int[width()];
+        seam[width() - 1] = edgeToSink;
+
+        for (int j = width() - 1; j > 0; j--) {
+            seam[j - 1] = edgeTo[seam[j]][j];
+        }
+
+        // null out our shortest-path arrays for garbage collection
+        distTo = null;
+        edgeTo = null;
+
+        return seam;
+
+    }
+
+    public int[] findVerticalSeam() {
+        transposed = false;
+
+        // Reset our distTo and edgeTo values for a new search
+        distToSink = Double.POSITIVE_INFINITY;
+        edgeToSink = Integer.MAX_VALUE;
+        distTo = new double[h][w];
+        edgeTo = new int[h][w];
+        for (double[] r: distTo) Arrays.fill(r, Double.POSITIVE_INFINITY);
+        for (int[] r: edgeTo) Arrays.fill(r, Integer.MAX_VALUE);
+
+        // Relax the entire top row, since this is our starting row
+        Arrays.fill(distTo[0], (double) 1000);
+        Arrays.fill(edgeTo[0], -1);
+
+        // Visit all pixels from the top, diagonally to the right,
+        // in keeping with topological order.
+        // The topological order is the reverse of the DFS post-order,
+        // which visits the left-most adjacent pixel first, before it visits
+        // pixels to the right.
+        for (int top = width() - 1; top >= 0; top--) {
+            for (int depth = 0;
+                 depth + top < width() && depth < height();
+                 depth++) {
+                visit(depth, depth + top);
+            }
+        }
+        // Visit all pixels from the left side, diagonally to the right,
+        // in keeping with the topological order described above.
+        for (int depth = 1; depth < height(); depth++) {
+            for (int out = 0;
+                 out < width() && depth + out < height();
+                 out++) {
+                visit(depth + out, out);
+            }
+        }
+
+        // Populate seam[] with the shortest path
+        int[] seam = new int[height()];
+        seam[height() - 1] = edgeToSink;
+
+        for (int i = height() - 1; i > 0; i--) {
+            seam[i - 1] = edgeTo[i][seam[i]];
+        }
+
+        // null out our shortest-path arrays for garbage collection
+        distTo = null;
+        edgeTo = null;
+
+        return seam;
+    }
+
+    private void visit(int i, int j) {
+        if (transposed) {
+            // Only relax the sink
+            if (j == width() - 1) {
+                relax(i, j);
+            }
+
+            // Bottom edge; relax to the right and above
+            else if (i == height() - 1) {
+                relax(i, j, i, j + 1);
+                relax(i, j, i - 1, j + 1);
+            }
+
+            // Top edge; relax to the right and below
+            else if (i == 0) {
+                relax(i, j, i, j + 1);
+                relax(i, j, i + 1, j + 1);
+            }
+
+            // Middle pixel; relax right, below, and above
+            else {
+                relax(i, j, i - 1, j + 1);
+                relax(i, j, i, j + 1);
+                relax(i, j, i + 1, j + 1);
+            }
+        }
+
+        else {
+            // Only relax the sink
+            if (i == height() - 1) {
+                relax(i, j);
+            }
+
+            // Right edge; relax below and to the left
+            else if (j == width() - 1) {
+                relax(i, j, i + 1, j - 1);
+                relax(i, j, i + 1, j);
+            }
+
+            // Left edge; relax below and to the right
+            else if (j == 0) {
+                relax(i, j, i + 1, j);
+                relax(i, j, i + 1, j + 1);
+            }
+
+            // Middle pixel; relax left, below, and right
+            else {
+                relax(i, j, i + 1, j - 1);
+                relax(i, j, i + 1, j);
+                relax(i, j, i + 1, j + 1);
+            }
+        }
+    }
+
+    private void relax(int i, int j) {
+        if (validIndex(i, j)) {
+            if (distToSink > distTo[i][j]) {
+                distToSink = distTo[i][j];
+                if (transposed) edgeToSink = i;
+                else edgeToSink = j;
+            }
+        }
+    }
+
+    private void relax(int i1, int j1, int i2, int j2) {
+        if (validIndex(i1, j1) && validIndex(i2, j2)) {
+            if (distTo[i2][j2] > distTo[i1][j1] + energy[i2][j2]) {
+                distTo[i2][j2] = distTo[i1][j1] + energy[i2][j2];
+                if (transposed) edgeTo[i2][j2] = i1;
+                else edgeTo[i2][j2] = j1;
+            }
+        }
+    }
+
+    private boolean validIndex(int i, int j) {
+        return (i >= 0 && i < height() && j >= 0 && j < width());
+    }
+
+    public void removeHorizontalSeam(int[] seam) {
+
+        // Check for bad input
+        if (height() <= 1)
+            throw new java.lang.IllegalArgumentException("Picture too short");
+        if (seam == null) throw new java.lang.NullPointerException();
+        if (seam.length != width())
+            throw new java.lang.IllegalArgumentException("Invalid seam length");
+
+        int yLast = seam[0];
+        for (int y: seam) {
+            if (y >= height() || y < 0)
+                throw new java.lang.IllegalArgumentException("Index out of bounds");
+            if (Math.abs(y - yLast) > 1)
+                throw new java.lang.IllegalArgumentException("Index not adjacent");
+            yLast = y;
+        }
+        // Create replacement arrays
+        int[][] newColor = new int[height() - 1][width()];
+        double[][] newEnergy = new double[height() - 1][width()];
+
+        // Populate replacement arrays, skipping pixels in the seam
+        for (int j = 0; j < width(); j++) {
+            int s = seam[j];
+            for (int i = 0; i < s; i++) {
+                newColor[i][j] = color[i][j];
+                newEnergy[i][j] = energy[i][j];
+            }
+
+            for (int i = s + 1; i < height(); i++) {
+                newColor[i - 1][j] = color[i][j];
+                newEnergy[i - 1][j] = energy[i][j];
+            }
+        }
+
+        color = newColor;
+        energy = newEnergy;
+        h--;
+
+        // Recalculate the energy along the seam
+        for (int j = 0; j < width(); j++) {
+            int s = seam[j];
+            // Top edge removed
+            if (s == 0) {
+                energy[s][j] = calcEnergy(j, s);
+            }
+
+            // Bottom edge removed
+            else if (s == height()) {
+                energy[s - 1][j] = calcEnergy(j, s - 1);
+            }
+
+            // Middle pixel removed
+            else {
+                energy[s][j] = calcEnergy(j, s);
+                energy[s - 1][j] = calcEnergy(j, s - 1);
+            }
+        }
+    }
+
+    public void removeVerticalSeam(int[] seam) {
+
+        // Check for bad input
+        if (width() <= 1)
+            throw new java.lang.IllegalArgumentException("Picture too narrow");
+        if (seam == null) throw new java.lang.NullPointerException();
+        if (seam.length != height())
+            throw new java.lang.IllegalArgumentException("Invalid seam length");
+
+        int xLast = seam[0];
+        for (int x: seam) {
+            if (x >= width() || x < 0)
+                throw new java.lang.IllegalArgumentException("Index out of bounds");
+            if (Math.abs(x - xLast) > 1)
+                throw new java.lang.IllegalArgumentException("Index not adjacent");
+            xLast = x;
+        }
+
+        // Create replacement arrays
+        int[][] newColor = new int[height()][width() - 1];
+        double[][] newEnergy = new double[height()][width() - 1];
+
+        // Populate replacement arrays, skipping pixels in the seam
+        for (int i = 0; i < height(); i++) {
+            int s = seam[i];
+
+            for (int j = 0; j < s; j++) {
+                newColor[i][j] = color[i][j];
+                newEnergy[i][j] = energy[i][j];
+            }
+
+            for (int j = s + 1; j < width(); j++) {
+                newColor[i][j - 1] = color[i][j];
+                newEnergy[i][j - 1] = energy[i][j];
+            }
+        }
+
+        color = newColor;
+        energy = newEnergy;
+        w--;
+
+        // Recalculate the energy along the seam
+        for (int i = 0; i < height(); i++) {
+            int s = seam[i];
+
+            // Left edge removed
+            if (s == 0) {
+                energy[i][s] = calcEnergy(s, i);
+            }
+
+            // Right edge removed
+            else if (s == width()) {
+                energy[i][s - 1] = calcEnergy(s - 1, i);
+            }
+
+            // Middle pixel removed
+            else {
+                energy[i][s] = calcEnergy(s, i);
+                energy[i][s - 1] = calcEnergy(s - 1, i);
+            }
+        }
+    }
     public Picture shrinkImage(int wid, int het){
-        int rowShrinked = pic.height() - het;
-        int colShrinked = pic.width() - wid;
+        int rowShrinked = picture().height() - het;
+        int colShrinked = picture().width() - wid;
         //先缩小高度
         for (int col = 0; col < rowShrinked; col++) {
             removeHorizontalSeam(findHorizontalSeam());}
@@ -98,305 +448,168 @@ public class SeamCarver  {
         for (int row = 0; row < colShrinked; row++) {
             removeVerticalSeam(findVerticalSeam());
         }
-        return pic;
+        return picture();
     }
-    public void initMarkedArea() {
-        this.protectedArea = new Boolean[width()][height()];
-        this.removalArea = new Boolean[width()][height()];
-    }
+    //仿照缩小写一个放大的方法
+    public void addVerticalSeam(int[] seam) {
+        // Check for bad input
+        //ToDo: 1. Check if the picture is too large to add a seam
+//        if (width() <= 1)
+//            throw new java.lang.IllegalArgumentException("Picture too narrow");
+        if (seam == null) throw new java.lang.NullPointerException();
+        if (seam.length != height())
+            throw new java.lang.IllegalArgumentException("Invalid seam length");
 
-    // energy of pixel at column x and row y
-    public double energy(int x, int y){
-        //考虑保护和易于移除的情况
-        //首先当protectedArea没有被初始化时，则忽略
-        if(protectedArea != null) {
-            if(protectedArea[x][y] != null && protectedArea[x][y]) {
-                return 1000;
+        int xLast = seam[0];
+        for (int x: seam) {
+            if (x >= width() || x < 0)
+                throw new java.lang.IllegalArgumentException("Index out of bounds");
+            if (Math.abs(x - xLast) > 1)
+                throw new java.lang.IllegalArgumentException("Index not adjacent");
+            xLast = x;
+        }
+
+        // Create replacement arrays
+        int[][] newColor = new int[height()][width() + 1];
+        double[][] newEnergy = new double[height()][width() + 1];
+
+        // Populate replacement arrays, inserting pixels in the seam
+        for (int i = 0; i < height(); i++) {
+            int s = seam[i];
+
+            for (int j = 0; j <= s; j++) {
+                newColor[i][j] = color[i][j];
+                newEnergy[i][j] = energy[i][j];
+            }
+
+            // Insert the new seam pixel (use average of left and right if possible)
+            if (s == 0) {
+                newColor[i][s + 1] = color[i][s];
+            } else if (s == width() - 1) {
+                newColor[i][s + 1] = color[i][s];
+            } else {
+                newColor[i][s + 1] = (color[i][s] + color[i][s + 1]) / 2;
+            }
+
+            for (int j = s + 1; j < width(); j++) {
+                newColor[i][j + 1] = color[i][j];
+                newEnergy[i][j + 1] = energy[i][j];
             }
         }
-        //和保护区域逻辑一样
-        if(removalArea != null) {
-            if(removalArea[x][y] != null && removalArea[x][y]) {
-                return -1000;
+
+        color = newColor;
+        energy = newEnergy;
+        w++;
+
+        // Recalculate the energy along the seam
+        for (int i = 0; i < height(); i++) {
+            int s = seam[i];
+
+            // Left edge added
+            if (s == 0) {
+                energy[i][s] = calcEnergy(s, i);
+                energy[i][s + 1] = calcEnergy(s + 1, i);
+            }
+
+            // Right edge added
+            else if (s == width() - 1) {
+                energy[i][s] = calcEnergy(s, i);
+                energy[i][s - 1] = calcEnergy(s - 1, i);
+            }
+
+            // Middle pixel added
+            else {
+                energy[i][s] = calcEnergy(s, i);
+                energy[i][s + 1] = calcEnergy(s + 1, i);
             }
         }
-        //设定 边界情况都为1000
-        if(x == 0||y == 0||x == width() - 1||y == height() - 1){
-            return 1000;
-        }
-        //如果超过边界报错
-        if (x < 0||x >= width()||y < 0||y > height()){
-            throw new  IndexOutOfBoundsException();
-        }
-        //计算能量方程
-        //中间的不算
-        Color color1 = picture().get(x + 1,y);
-        Color color2 = picture().get(x - 1,y);
-        Color color3 = picture().get(x,y - 1);
-        Color color4 = picture().get(x,y + 1);
-        //计算沿着x,y方向分别的能量数值
-        double deltaX = Math.pow(color1.getRed() - color2.getRed(),2) + Math.pow(color1.getBlue() - color2.getBlue(),2) + Math.pow(color1.getGreen() - color2.getGreen(),2);
-        double deltaY = Math.pow(color3.getRed() - color4.getRed(),2) + Math.pow(color3.getBlue() - color4.getBlue(),2) + Math.pow(color3.getGreen() - color4.getGreen(),2);
-        return Math.sqrt(deltaX + deltaY);
     }
 
-    // 水平切割
-    public int[] findHorizontalSeam(){
-        mode = "horizontal";
-        //构造两个hashmap分别代表seam上每个点的energy和seam上每个点的row值的连接
-        HashMap<String, String> pathTo = new HashMap<String, String>();
-        HashMap<String, Double> energyTo = new HashMap<String, Double>();
-        String cur , next, end = null;
-        Double cost = Double.MAX_VALUE;
-        for (int col = 0; col < width() - 1; col++)
-            for (int row = 0; row < height(); row++) {
-                //用第几行第几列来代表像素点所在位置
-                cur = col + " " + row;
-                //对于第一列的像素设置前导像素为空并填入能量
-                if (col == 0){
-                    energyTo.put(cur,energy(col,row));
-                    //???
-                    pathTo.put(cur,null);
-                }
-                //遍历该点附近
-                for (int i = row - 1; i <= row + 1; i++)
-                    if (i >= 0 && i < height()) {
-                        next = (col + 1) + " " + row;
-                        double newEng = energy(col + 1, i) + energyTo.get(cur);//???
-                        //如果我们还没有一条新的边，添加一个；或者
-                        // 如果这个边代表的能量值更小就代替
-                        if (energyTo.get(next) == null || newEng < energyTo.get(next)) {
-                            //联系当前点和下一点
-                            pathTo.put(next, cur);
-                            energyTo.put(next, newEng);
-                            //如果当前列是倒数第二列，并且新能量值小于当前最小能量值，则更新最小能量值和终点。
-                            if (col + 1 == width() - 1 && newEng < cost) {
-                                cost = newEng;
-                                end = next;
-                            }
-                        }
-                    }
-            }
-        //模式为水平时，定义路径大小为宽度
-        int size = width();
-        int[] path = new int[size];
-        //通过回溯的方法还原最短路径
-        String current = end;
-        //遍历最小的
-        while (size > 0){
-            size = size - 1;
-            path[size] = str2id(mode,current);
-            current = pathTo.get(current);
-        }
-        return path;
-    }
-
-    //optimize here
-    private int str2id(String mode, String str) {
-        if (mode.equals("vertical"))
-            return Integer.parseInt(str.split(" ")[0]);//0->1
-        else if (mode.equals("horizontal"))
-            return Integer.parseInt(str.split(" ")[1]);
-        else
-            throw new IllegalArgumentException();
-    }
-
-
-    // sequence of indices for vertical seam
-    public int[] findVerticalSeam(){
-        mode = "vertical";
-        //构造两个hashmap分别代表seam上每个点的energy和seam上每个点的row值的连接
-        HashMap<String, String> pathTo = new HashMap<String, String>();
-        HashMap<String, Double> energyTo = new HashMap<String, Double>();
-        String cur , next, end = null;
-        Double cost = Double.MAX_VALUE;
-        for (int row = 0; row < height() - 1; row++)
-            for (int col = 0; col < width(); col++) {
-                //用第几行第几列来代表像素点所在位置
-                cur = col + " " + row;
-                //对于第一行的像素设置前导像素为空并填入能量
-                if (row == 0){
-                    energyTo.put(cur,energy(col,row));
-                    pathTo.put(cur,null);
-                }
-                //遍历该点附近
-                for (int i = col - 1; i <= col + 1; i++)
-                    if (i >= 0 && i < width()) {
-                        next = col + " " + (row + 1);
-                        double newEng = energy(i, row + 1) + energyTo.get(cur);
-                        //如果我们还没有一条新的边，添加一个；或者
-                        // 如果这个边代表的能量值更小就代替
-
-                        if (energyTo.get(next) == null || newEng < energyTo.get(next)) {
-
-                            pathTo.put(next, cur);
-                            energyTo.put(next, newEng);
-
-                            //End at the second to last column, because 'next' involves
-                            // the next column.
-                            //bug
-                            if (row + 1 == height() - 1 && newEng < cost) {
-                                cost = newEng;
-                                end = next;
-                            }
-                        }
-                    }
-
-            }
-        //模式为水平时，定义路径大小为宽度
-        int size = height();
-        int[] path = new int[size];
-        //通过回溯的方法还原最短路径
-        String current = end;
-        //遍历最小的
-        while (size > 0){
-            size = size - 1;
-            path[size] = str2id(mode,current);
-            current = pathTo.get(current);
-        }
-        return path;
-
-    }
-
-
+    //仿照放大竖直写一个放大水平的方法
     public void addHorizontalSeam(int[] seam){
-        //首先判断seam是否有效
-        if (!isValidHorizontalSeam(seam)){
-            throw new IllegalArgumentException("Seam is invalid.");
+        // Check for bad input
+
+        if (seam == null) throw new java.lang.NullPointerException();
+        if (seam.length != width())
+            throw new java.lang.IllegalArgumentException("Invalid seam length");
+
+        int yLast = seam[0];
+        for (int y: seam) {
+            if (y >= height() || y < 0)
+                throw new java.lang.IllegalArgumentException("Index out of bounds");
+            if (Math.abs(y - yLast) > 1)
+                throw new java.lang.IllegalArgumentException("Index not adjacent");
+            yLast = y;
         }
 
-        //采用平均的方法添加seam
-        //仿照remove的方式创建比原来大一行的图片对象
-        Picture newOne = new Picture(width(), height() + 1);
-        //将seam复制到下一行
-        for (int col = 0; col < width(); col++) {
-            for (int row = 0; row < height() + 1; row++) {
-                if (row < seam[col]){
-                    //seam对应行及上述所有行的像素保持不变
-                    newOne.set(col,row,pic.get(col,row));
-                } else if (row == seam[col]) {
+        // Create replacement arrays
+        int[][] newColor = new int[height() + 1][width()];
+        double[][] newEnergy = new double[height() + 1][width()];
 
-                    if (row == 0){
-                        //row在第一行只取下方像素
-                        newOne.set(col,row,pic.get(col,row));
-                    } else if (row == height()) {
-                        //row在最后一行只取上方像素
-                        newOne.set(col,row,pic.get(col,row - 1));
-                    } else {
-                        Color up = pic.get(col,row);
-                        Color down = pic.get(col,row + 1);
-                        newOne.set(col,row,aveColor(up,down));
-                    }
-                    newOne.set(col,row + 1,pic.get(col,row));
-
-                } else if (row > seam[col]){
-                    //seam对应行下面所有行设定为原图上一行的像素
-                    newOne.set(col,row,pic.get(col,row - 1));
-                }
-            }
-        }
-        height = height + 1;
-        pic = new Picture(newOne);
-    }
-    private boolean isValidVerticalSeam(int[] seam){
-        boolean flag = true;
-        if (seam == null || seam.length != pic.height()) {
-            flag = false;
-        }
-        return flag;
-    }
-    private boolean isValidHorizontalSeam(int[] seam){
-        boolean flag = true;
-        if (seam == null || seam.length != pic.width()) {
-            flag = false;
-        }
-        return flag;
-    }
-
-    public void addVerticalSeam(int[] seam){
-        //首先判断seam是否有效
-        if (!isValidVerticalSeam(seam)){
-            throw new IllegalArgumentException("Seam is invalid.");
-        }
-        //采用平均的方法添加seam
-        //仿照remove的方式创建比原来大一行的图片对象
-        Picture newOne = new Picture(width() + 1, height());
-        //将seam复制到下一行
-        for (int row = 0; row < height(); row++) {
-            for (int col = 0; col < width() + 1; col++) {
-                if (col < seam[row]){
-                    //seam对应列及左边所有列的像素保持不变
-                    newOne.set(col,row,pic.get(col,row));
-                    //通过平均的方法添加seam
-                } else if (col == seam[row]) {
-
-                    if (col == 0){
-                        //col在第一列只取右边像素
-                        newOne.set(col,row,pic.get(col,row));
-                    } else if (col == width()) {
-                        //col在最后一列只取左边像素
-                        newOne.set(col,row,pic.get(col - 1,row));
-                    }else {
-                        //采取平均的方式
-                        Color left = pic.get(col, row);
-                        Color right = pic.get(col + 1, row);
-                        newOne.set(col,row,aveColor(left, right));
-                    }
-                    newOne.set(col + 1,row,pic.get(col, row));
-
-                } else if (col > seam[row]){
-                    //seam对应行右边所有列设定为原图上一列的像素
-                    newOne.set(col,row,pic.get(col - 1,row));
-                }
-            }
-        }
-        width = width + 1;
-        pic = new Picture(newOne);
-    }
-    private Color aveColor(Color c1, Color c2){
-        int red = (c1.getRed() + c2.getRed()) / 2;
-        int green = (c1.getGreen() + c2.getGreen()) / 2;
-        int blue = (c1.getBlue() + c2.getBlue()) / 2;
-        return new Color(red, green, blue);
-    }
-
-    // remove horizontal seam from current picture
-    public void removeHorizontalSeam(int[] seam){
-        Picture newOne = new Picture(width(),height() - 1);
-        //使seam上的所有色素块往下移动一格
-        //首先选中seam上方得区域
-
-        for (int col = 0; col < width(); col++)
-            for (int row = 0; row < height() - 1; row++) {
-
-                if (row < seam[col])
-                    newOne.set(col, row, pic.get(col, row));
-                else
-                    newOne.set(col, row, pic.get(col, row + 1));
-
-            }
-        height = height - 1;
-        pic = new Picture(newOne);
-
-    }
-
-
-    // remove vertical seam from current picture
-    public void removeVerticalSeam(int[] seam){
-        Picture newOne = new Picture(width() - 1,height());
-        for (int row = 0; row < height(); row++) {
-            for (int col = 0; col < width() - 1; col++) {
-                if (col <= seam[row] - 1){
-                    newOne.set(col,row,pic.get(col,row));
-                }else {
-                    newOne.set(col,row,pic.get(col + 1,row));
-                }
+        // Populate replacement arrays, inserting pixels in the seam
+        for (int j = 0; j < width(); j++) {
+            int s = seam[j];
+            for (int i = 0; i <= s; i++) {
+                newColor[i][j] = color[i][j];
+                newEnergy[i][j] = energy[i][j];
             }
 
+            // Insert the new seam pixel (use average of up and down if possible)
+            if (s == 0) {
+                newColor[s + 1][j] = color[s][j];
+            } else if (s == height() - 1) {
+                newColor[s + 1][j] = color[s][j];
+            } else {
+                newColor[s + 1][j] = (color[s][j] + color[s + 1][j]) / 2;
+            }
+
+            for (int i = s + 1; i < height(); i++) {
+                newColor[i + 1][j] = color[i][j];
+                newEnergy[i + 1][j] = energy[i][j];
+            }
         }
-        width = width - 1;
-        pic = new Picture(newOne);
+
+        color = newColor;
+        energy = newEnergy;
+        h++;
+
+        // Recalculate the energy along the seam
+        for (int j = 0; j < width(); j++) {
+            int s = seam[j];
+
+            // Top edge added
+            if (s == 0) {
+                energy[s][j] = calcEnergy(j, s);
+                energy[s + 1][j] = calcEnergy(j, s + 1);
+            }
+
+            // Bottom edge added
+            else if (s == height() - 1) {
+                energy[s][j] = calcEnergy(j, s);
+                energy[s - 1][j] = calcEnergy(j, s - 1);
+            }
+
+            // Middle pixel added
+            else {
+                energy[s][j] = calcEnergy(j, s);
+                energy[s + 1][j] = calcEnergy(j, s + 1);
+            }
+        }
     }
+    //写一个放大图片的代码
+    public Picture enlargeImage(int wid, int het){
+        int rowEnlarged = het - picture().height();
+        int colEnlarged = wid - picture().width();
+        //先放大高度
+        for (int col = 0; col < rowEnlarged; col++) {
+            addHorizontalSeam(findHorizontalSeam());
+        }
+        //再放大宽度
+        for (int row = 0; row < colEnlarged; row++) {
+            addVerticalSeam(findVerticalSeam());
+        }
+        return picture();
+    }
+
 
 }
-
