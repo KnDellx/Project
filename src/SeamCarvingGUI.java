@@ -29,7 +29,6 @@ public class SeamCarvingGUI extends JFrame {
         setSize(1000, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
         setTitle(" Carve whatever you want！");
 
         //创建处理图片的按钮
@@ -92,6 +91,16 @@ public class SeamCarvingGUI extends JFrame {
         fileMenu.add(exitMenuItem);
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
+
+        //能否通过图片大小自适应更改窗口大小
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                if (pic != null) {
+                    imageLabel.setIcon(pic.getJLabel().getIcon());
+                }
+            }
+        });
 
     }
 
