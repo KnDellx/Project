@@ -79,6 +79,15 @@ public class SeamCarver {
             }
         }
     }
+    //写一个重新计算能量的函数
+    public void reCalculateEnergy(){
+        energy = new double[h][w];
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                energy[i][j] = calcEnergy(j, i);
+            }
+        }
+    }
 
     public Picture picture() {
 
@@ -452,9 +461,9 @@ public class SeamCarver {
     //仿照缩小写一个放大的方法
     public void addVerticalSeam(int[] seam) {
         // Check for bad input
-        //ToDo: 1. Check if the picture is too large to add a seam
-//        if (width() <= 1)
-//            throw new java.lang.IllegalArgumentException("Picture too narrow");
+        //ToDo:1. Check if the picture is too large to add a seam，比如放大超过图像的50%
+
+
         if (seam == null) throw new java.lang.NullPointerException();
         if (seam.length != height())
             throw new java.lang.IllegalArgumentException("Invalid seam length");
@@ -487,7 +496,14 @@ public class SeamCarver {
             } else if (s == width() - 1) {
                 newColor[i][s + 1] = color[i][s];
             } else {
-                newColor[i][s + 1] = (color[i][s] + color[i][s + 1]) / 2;
+                //分别采取三元色分别平均避免失真
+                Color color1 = new Color(color[i][s]);
+                Color color2 = new Color(color[i][s + 1]);
+                int red = (color1.getRed() + color2.getRed()) / 2;
+                int green = (color1.getGreen() + color2.getGreen()) / 2;
+                int blue = (color1.getBlue() + color2.getBlue()) / 2;
+                Color newColorRGB = new Color(red, green, blue);
+                newColor[i][s + 1] = newColorRGB.getRGB();
             }
 
             for (int j = s + 1; j < width(); j++) {
@@ -559,7 +575,14 @@ public class SeamCarver {
             } else if (s == height() - 1) {
                 newColor[s + 1][j] = color[s][j];
             } else {
-                newColor[s + 1][j] = (color[s][j] + color[s + 1][j]) / 2;
+                //分别采取三元色避免失真
+                Color color1 = new Color(color[s][j]);
+                Color color2 = new Color(color[s + 1][j]);
+                int red = color1.getRed() + (color2.getRed() - color1.getRed()) / 2;
+                int green = color1.getGreen() + (color2.getGreen() - color1.getGreen()) / 2;
+                int blue = color1.getBlue() + (color2.getBlue() - color1.getBlue()) / 2;
+                Color newColorRGB = new Color(red, green, blue);
+                newColor[s + 1][j] = newColorRGB.getRGB();
             }
 
             for (int i = s + 1; i < height(); i++) {
@@ -599,14 +622,19 @@ public class SeamCarver {
     public Picture enlargeImage(int wid, int het){
         int rowEnlarged = het - picture().height();
         int colEnlarged = wid - picture().width();
-        //先放大高度
-        for (int col = 0; col < rowEnlarged; col++) {
-            addHorizontalSeam(findHorizontalSeam());
+        int maxEnlarged = Math.max(rowEnlarged, colEnlarged);
+
+        for (int i = 0; i < maxEnlarged; i++) {
+            if (i < rowEnlarged) {
+                int[] horizontalSeam = findHorizontalSeam();
+                addHorizontalSeam(horizontalSeam);
+            }
+            if (i < colEnlarged) {
+                int[] verticalSeam = findVerticalSeam();
+                addVerticalSeam(verticalSeam);
+            }
         }
-        //再放大宽度
-        for (int row = 0; row < colEnlarged; row++) {
-            addVerticalSeam(findVerticalSeam());
-        }
+
         return picture();
     }
 
