@@ -287,7 +287,14 @@ public class SeamCarvingGUI extends JFrame {
 
                                 int response = JOptionPane.showConfirmDialog(null, "Do you want to save the processed image?", "Save Image", JOptionPane.YES_NO_OPTION);
                                 if (response == JOptionPane.YES_OPTION) {
-                                    pic.save("output.jpg");
+                                    //弹窗可自由选择保存路径
+                                    JFileChooser fileChooser = new JFileChooser();
+                                    int result = fileChooser.showSaveDialog(null);
+                                    if (result == JFileChooser.APPROVE_OPTION) {
+                                        File file = fileChooser.getSelectedFile();
+                                        pic.save(file.getAbsolutePath());
+                                        imageLabel.setIcon(pic.getJLabel().getIcon());
+                                    }
                                 } else {
                                     imageLabel.setIcon(originalPic.getJLabel().getIcon());
                                     pic = new Picture(originalPic);
