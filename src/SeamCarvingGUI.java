@@ -315,6 +315,11 @@ public class SeamCarvingGUI extends JFrame {
     }
 
     public void loadImage() {
+        //如果已经选择文件就弹窗报错
+        if (pic != null) {
+            JOptionPane.showMessageDialog(null, "Image already loaded!");
+            return;
+        }
         // Load an image from a file
         JFileChooser fileChooser = new JFileChooser();
         int result = fileChooser.showOpenDialog(this);
