@@ -12,7 +12,7 @@ public class SeamCarvingGUI extends JFrame {
     private ImageIcon imageIcon;
     //创建一个图标
     private JLabel imageLabel = new JLabel();
-    private src.SeamCarver SEAMCARVER ;
+    private SeamCarver SEAMCARVER ;
 
     //设定默认文件夹路径和图标大小
     private static final String ICONS_FOLDER = "icons";
@@ -264,7 +264,7 @@ public class SeamCarvingGUI extends JFrame {
             // Load the image into the SeamCarver
             pic = new Picture(imagePath);
             originalPic = new Picture(imagePath);
-            SEAMCARVER = new src.SeamCarver(pic);
+            SEAMCARVER = new SeamCarver(pic);
         }
 
     }
